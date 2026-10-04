@@ -53,7 +53,7 @@ npm run preview -- --port=5184
 
 Deploy the generated `dist/` folder to an ordinary static web host. It contains the game, local data and licence notices; the relay and research evidence stay outside the build.
 
-The OpenAI-hosted version uses a same-origin Worker relay for live aircraft and route requests. Build it with `node scripts/build.mjs --hosted`; the Site manifest keeps the existing project identity and uses Worker hosting. The relay accepts fixed provider paths, limits request and response sizes, caches snapshots for at most 20 seconds, and respects provider pauses.
+The OpenAI-hosted version uses adsb.fi for fresh aircraft positions and adsbdb for reported routes, through a same-origin Worker relay. It stays private for personal, non-commercial use. Build it with `node scripts/build.mjs --hosted`; the Site manifest keeps the existing project identity and uses Worker hosting. The relay accepts fixed provider paths, limits request and response sizes, caches snapshots for at most 20 seconds, and respects provider pauses.
 
 Recorded practice is the dependable static experience. Earlier localhost browser checks could not read live aircraft data directly because the providers did not allow that browser origin. A public live deployment needs a successful check from its actual address, provider permission or an owned data service. See the dated [data-source findings](docs/data-sources.md).
 

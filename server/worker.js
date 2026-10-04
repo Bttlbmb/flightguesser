@@ -1,17 +1,17 @@
 // The private Site owns this relay; only fixed aircraft-provider paths are allowed.
-export function upstreamForPath(path) {
+export function upstreamForPath(path, telemetryProvider = 'adsb.fi') {
   const nearby = path.match(/^\/api\/nearby\/(-?\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)\/(50|100|250)$/);
   const route = path.match(/^\/api\/route\/([A-Z]{3}\d[A-Z0-9]{0,6})\/(-?\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)$/);
   const callsign = path.match(/^\/api\/callsign\/([A-Z]{3}\d[A-Z0-9]{0,6})$/);
   const airline = path.match(/^\/api\/airline\/([A-Z]{3})$/);
   if (callsign) return 'https://api.adsbdb.com/v0/callsign/' + callsign[1];
   if (airline) return 'https://api.adsbdb.com/v0/airline/' + airline[1];
-  if (!nearby && !route) return null;
+  if ((!nearby && !route) || (route && telemetryProvider !== 'adsb.lol')) return null;
   const lat = Number(nearby ? nearby[1] : route[2]);
   const lon = Number(nearby ? nearby[2] : route[3]);
   if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
   return nearby
-    ? 'https://api.adsb.lol/v2/point/' + lat + '/' + lon + '/' + nearby[3]
+    ? (telemetryProvider === 'adsb.lol' ? 'https://api.adsb.lol/v2/point/' + lat + '/' + lon + '/' + nearby[3] : 'https://opendata.adsb.fi/api/v3/lat/' + lat + '/lon/' + lon + '/dist/' + nearby[3])
     : 'https://api.adsb.lol/api/0/route/' + route[1] + '/' + lat + '/' + lon;
 }
 const headers = {
@@ -53,10 +53,10 @@ async function readJson(response) {
   JSON.parse(text);
   return { text, size };
 }
-export function createHostedHandler({ assets = {}, fetcher = (url, options) => globalThis.fetch(url, options), now = Date.now } = {}) {
+export function createHostedHandler({ assets = {}, fetcher = (url, options) => globalThis.fetch(url, options), now = Date.now, nearbyIntervalMs = 1000 } = {}) {
   const cache = new Map();
   const recent = [];
-  let bytes = 0, inFlight = 0, pauseUntil = 0;
+  let bytes = 0, inFlight = 0, pauseUntil = 0, nextNearbyAt = 0;
   const drop = key => { bytes -= cache.get(key).size; cache.delete(key); };
   return {
     async fetch(request) {
@@ -77,7 +77,7 @@ export function createHostedHandler({ assets = {}, fetcher = (url, options) => g
         return json(403, { error: 'Same-origin requests only' });
       }
       if (url.search) return json(400, { error: 'Unsupported data request' });
-      if (url.pathname === '/api/config') return json(200, { relay: true });
+      if (url.pathname === '/api/config') return json(200, { relay: true, telemetryProvider: 'adsb.fi', routeProvider: 'adsbdb' });
       const upstream = upstreamForPath(url.pathname);
       if (!upstream) return json(400, { error: 'Unsupported data request' });
       const timestamp = now();
@@ -96,6 +96,13 @@ export function createHostedHandler({ assets = {}, fetcher = (url, options) => g
       if (incoming?.aborted) cancel();
       else incoming?.addEventListener?.('abort', cancel, { once: true });
       try {
+        // adsb.fi allows one request per second. Reserve slots before waiting.
+        if (upstream.startsWith('https://opendata.adsb.fi/')) {
+          const startAt = Math.max(now(), nextNearbyAt);
+          nextNearbyAt = startAt + nearbyIntervalMs;
+          const delay = Math.max(0, startAt - now());
+          if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+        }
         const response = await fetcher(upstream, {
           signal: timeout.signal,
           redirect: 'manual',

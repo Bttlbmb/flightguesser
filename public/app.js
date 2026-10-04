@@ -74,7 +74,7 @@ function renderCities(message = '') {
     <form id="city-form" class="place-form"><label for="city-select">City</label>
       <select id="city-select" required><option value="">Choose a city</option>${cities.map((city, index) => `<option value="${index}">${city.name}</option>`).join('')}</select>
       <button class="button primary" type="submit">Find a flight</button>
-    </form><p class="privacy">City coordinates are sent to adsb.lol. Your device location isn’t used.</p>
+    </form><p class="privacy">City coordinates are sent to the aircraft data provider. Your device location isn’t used.</p>
   </section>`;
   focusHeading();
 }
@@ -187,7 +187,7 @@ async function startSearch(place) {
     config = loadedConfig;
     if (token !== generation || searchController.signal.aborted) return;
     const round = await findNearbyRound(place, {
-      signal: searchController.signal, relay: config.relay, excluded: playedAircraft, excludedDestinationIds: lastDestinationIds, history: selectionHistory,
+      signal: searchController.signal, ...config, excluded: playedAircraft, excludedDestinationIds: lastDestinationIds, history: selectionHistory,
       // Use the same municipality recovery as the city picker. Provider positions
       // stay intact; a missing city label must not defeat destination rotation.
       resolveDestination: destinationResolver(airports),
@@ -614,12 +614,12 @@ function showInfo(kind) {
   } else {
     title.textContent = 'About the data';
     const round = state.view === 'game' ? state.game.round : null;
-    content.innerHTML = `<p>Aircraft positions and flight clues come from <a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noopener noreferrer">adsb.lol</a> under ODbL 1.0. Routes use adsb.lol, with <a href="https://www.adsbdb.com/" target="_blank" rel="noopener noreferrer">adsbdb</a> if a lookup is unavailable. Airline names also use adsbdb when available. Routes match a flight identifier, called a callsign, to airports. These database matches can be stale or wrong; they aren’t confirmed flight plans.</p>
+    content.innerHTML = `<p>Live aircraft positions come from <a href="https://adsb.fi/" target="_blank" rel="noopener noreferrer">adsb.fi</a> for personal, non-commercial play. Recorded practice comes from <a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noopener noreferrer">adsb.lol</a> under ODbL 1.0. Live reported routes and airline names come from <a href="https://www.adsbdb.com/" target="_blank" rel="noopener noreferrer">adsbdb</a>. Routes match a flight identifier, called a callsign, to airports. These database matches can be stale or wrong; they aren’t confirmed flight plans.</p>
       <p>We skip positions over a minute old, unclear routes and routes with stops. Each round keeps its original observation, so the position and answer stay fixed while you play.</p>
       <h3>What the clues mean</h3><p>Current heading shows where the aircraft’s nose points at the observation. When it isn’t reported, current direction of travel shows its movement over the ground. The plane can turn before arrival; the starting place is the observation area, not its departure point. An airline clue uses the operating airline reported for the flight, when its name is available. Distance remaining is a straight-line estimate to the main destination city; the actual flight path may be longer. The combined distance-and-direction clue starts at your first guessed city and stays fixed. The other clues give the destination country and the first letter of an accepted city.</p>
       <h3>Distances and map</h3><p>Guess feedback points from your chosen city toward the main destination city. The distance clue runs from the aircraft to that city. Both use straight-line distances to city reference points; where city coordinates are unavailable, we use an airport position. We don’t estimate arrival times.</p>
       <p>Linked cities can also count as correct. The reported route and globe use the exact airports. The dotted line appears after the round and illustrates the reported route; it isn’t a recorded flight path.</p>
-      ${round ? `<h3>This round</h3><p>${escape(round.mode === 'practice' ? 'Recorded practice observation' : 'Aircraft observed')} ${escape(new Date(round.aircraft.positionObservedAt).toLocaleString('en-GB', { timeZone: 'UTC' }))} UTC. Route source: ${escape(round.route.provider)}.</p>` : ''}
+      ${round ? `<h3>This round</h3><p>${escape(round.mode === 'practice' ? 'Recorded practice observation' : 'Aircraft observed')} ${escape(new Date(round.aircraft.positionObservedAt).toLocaleString('en-GB', { timeZone: 'UTC' }))} UTC. Aircraft source: ${escape(round.provider)}. Route source: ${escape(round.route.provider)}.</p>` : ''}
       <h3>Your location</h3><p>Permission is requested only when you press “Use my location”. Approximate coordinates are sent to the aircraft provider. This game doesn’t save your location or use analytics. Providers may keep their own request logs.</p>
       <p>Airport names and coordinates come from <a href="https://ourairports.com/data/" target="_blank" rel="noopener noreferrer">OurAirports</a>, public-domain data via datasets/airport-codes. A small curated list links airports to the cities they serve. Other places use the town or city listed for the airport.</p>`;
   }

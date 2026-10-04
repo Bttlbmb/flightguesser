@@ -87,7 +87,10 @@ export async function runtimeConfig({ hostname = location.hostname, fetcher = fe
     const response = await fetcher('/api/config', { credentials: 'same-origin', signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) return { relay: false };
     const config = await response.json();
-    return { relay: config.relay === true };
+    return { relay: config.relay === true,
+      ...(config.telemetryProvider === 'adsb.fi' ? { telemetryProvider: 'adsb.fi' } : {}),
+      ...(config.routeProvider === 'adsbdb' ? { routeProvider: 'adsbdb' } : {}),
+    };
   } catch { return { relay: false }; }
 }
 
@@ -105,7 +108,7 @@ export async function findNearbyRound(place, options = {}) {
 }
 
 async function findWithinBudget(place, {
-  signal, callerSignal = null, relay = false, onProgress = () => {}, fetcher = fetch,
+  signal, callerSignal = null, relay = false, telemetryProvider = 'adsb.lol', routeProvider = 'adsb.lol', onProgress = () => {}, fetcher = fetch,
   excluded = new Set(), excludedDestinationIds = new Set(), resolveDestination = airport => airport,
   history = [], random = Math.random,
 } = {}) {
@@ -122,7 +125,7 @@ async function findWithinBudget(place, {
     if (!picked) return null;
     const { profile, ...candidate } = picked.candidate;
     return {
-      mode: 'live', ...candidate, place, provider: 'adsb.lol', selectedAt: Date.now(),
+      mode: 'live', ...candidate, place, provider: telemetryProvider, selectedAt: Date.now(),
       diagnostics: {
         routeRequests, routeFailures, candidatesCompared: usable.length,
         distinctDestinations: rankSelections(freshCandidates(), history).length,
@@ -138,7 +141,7 @@ async function findWithinBudget(place, {
   try {
     search: for (const radiusNm of SEARCH_RADII_NM) {
       onProgress({ radiusKm: Math.round(radiusNm * 1.852), stage: 'nearby' });
-      const nearbyUrl = relay ? `/api/nearby/${lat}/${lon}/${radiusNm}` : `https://api.adsb.lol/v2/point/${lat}/${lon}/${radiusNm}`;
+      const nearbyUrl = relay ? `/api/nearby/${lat}/${lon}/${radiusNm}` : telemetryProvider === 'adsb.fi' ? `https://opendata.adsb.fi/api/v3/lat/${lat}/lon/${lon}/dist/${radiusNm}` : `https://api.adsb.lol/v2/point/${lat}/${lon}/${radiusNm}`;
       const payload = await request(nearbyUrl);
       const candidates = orderAircraftCandidates(aircraftCandidates(payload, place, radiusNm)
         .filter(aircraft => !excluded.has(aircraft.hex) && !checked.has(aircraft.hex)), random);
@@ -153,18 +156,20 @@ async function findWithinBudget(place, {
         checked.add(aircraft.hex);
         routeRequests++;
         onProgress({ radiusKm: Math.round(radiusNm * 1.852), stage: 'route' });
-        const url = relay
+        const url = routeProvider === 'adsbdb'
+          ? (relay ? `/api/callsign/${aircraft.callsign}` : `https://api.adsbdb.com/v0/callsign/${aircraft.callsign}`)
+          : relay
           ? `/api/route/${aircraft.callsign}/${aircraft.lat}/${aircraft.lon}`
           : `https://api.adsb.lol/api/0/route/${aircraft.callsign}/${aircraft.lat}/${aircraft.lon}`;
         let route, fallbackAllowed = false;
         try {
           const raw = await request(url, 6000);
-          route = normalizeRoute(raw, aircraft);
-          fallbackAllowed = !Array.isArray(raw?._airports) || raw._airports.length === 0;
+          route = normalizeRoute(raw, aircraft, routeProvider);
+          fallbackAllowed = routeProvider === 'adsb.lol' && (!Array.isArray(raw?._airports) || raw._airports.length === 0);
         } catch (error) {
           if (error.name === 'AbortError' || error.code === 'rate-limit' || error.code === 'comparison-complete') throw error;
           routeFailures++;
-          fallbackAllowed = true;
+          fallbackAllowed = routeProvider === 'adsb.lol';
         }
         if (!route && fallbackAllowed && routeRequests - radiusStart < allowance && routeRequests < MAX_ROUTE_LOOKUPS) {
           routeRequests++;

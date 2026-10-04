@@ -28,10 +28,12 @@ try {
   const html = await page.text();
   if (html.includes('difficulty-select')) throw new Error('Difficulty selector is still present');
   const config = await fetcher('/api/config');
-  if (!config.ok || (await config.json()).relay !== true) throw new Error('Hosted relay not enabled');
-  const round = await findNearbyRound({ lat: 37.5665, lon: 126.978, name: 'Seoul', kind: 'city' }, { relay: true, fetcher });
-  console.log(JSON.stringify({ page: 'passed', difficultySelector: 'absent', relay: 'enabled', mode: round.mode, routeSource: round.route.provider, candidatesCompared: round.diagnostics.candidatesCompared }));
+  if (!config.ok) throw new Error('Hosted relay not enabled');
+  const settings = await config.json();
+  if (settings.relay !== true) throw new Error('Hosted relay not enabled');
+  const round = await findNearbyRound({ lat: 37.5665, lon: 126.978, name: 'Seoul', kind: 'city' }, { ...settings, fetcher });
+  console.log(JSON.stringify({ page: 'passed', difficultySelector: 'absent', relay: 'enabled', mode: round.mode, aircraftSource: round.provider, routeSource: round.route.provider, candidatesCompared: round.diagnostics.candidatesCompared }));
 } catch (error) {
-  console.log(JSON.stringify({ verification: 'failed', code: error.code ?? 'hosted-check', message: error.message }));
+  console.log(JSON.stringify({ verification: 'failed', code: error.code ?? 'hosted-check', message: error.message, retryAfter: error.retryAfter }));
   process.exitCode = 1;
 }

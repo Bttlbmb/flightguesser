@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHostedHandler, upstreamForPath } from '../server/worker.js';
+import { createHostedHandler as createHandler, upstreamForPath } from '../server/worker.js';
 import { findNearbyRound, requestJson } from '../public/api.js';
+const createHostedHandler = options => createHandler({ nearbyIntervalMs: 0, ...options });
 const origin = 'https://flightguesser.example';
 const req = (path, init) => new Request(origin + path, init);
 const json = value => new Response(JSON.stringify(value));
@@ -65,14 +66,16 @@ test('a browser search opens a live round through hosted telemetry and fallback 
   const airport = (icao, lon) => ({ icao_code: icao, iata_code: icao.slice(1), name: icao + ' Airport', municipality: icao, country_iso_name: 'GB', latitude: 0, longitude: lon });
   const worker = createHostedHandler({ fetcher: async url => {
     paths.push(url);
-    if (url.includes('/v2/point/')) return json({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'ABC123', lat: 0, lon: 5, alt_baro: 34000, gs: 420, track: 90, seen: 1, seen_pos: 2 }] });
+    if (url.includes('/api/v3/lat/')) return json({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'ABC123', lat: 0, lon: 5, alt_baro: 34000, gs: 420, track: 90, seen: 1, seen_pos: 2 }] });
     if (url.includes('/api/0/route/')) return new Response('{}', { status: 500 });
     return json({ response: { flightroute: { callsign_icao: 'ABC123', origin: airport('AAAA', 0), destination: airport('BBBB', 10) } } });
   } });
   const browserFetch = async (path, init) => worker.fetch(req(path, init));
-  assert.deepEqual(await (await browserFetch('/api/config')).json(), { relay: true });
-  const round = await findNearbyRound({ lat: 0, lon: 5, name: 'Test city' }, { relay: true, fetcher: browserFetch });
+  const settings = await (await browserFetch('/api/config')).json();
+  assert.deepEqual(settings, { relay: true, telemetryProvider: 'adsb.fi', routeProvider: 'adsbdb' });
+  const round = await findNearbyRound({ lat: 0, lon: 5, name: 'Test city' }, { ...settings, fetcher: browserFetch });
   assert.equal(round.mode, 'live');
+  assert.equal(round.provider, 'adsb.fi');
   assert.equal(round.route.provider, 'adsbdb');
   assert.equal(round.route.destination.id, 'BBBB');
   assert.ok(paths.some(url => url.includes('api.adsbdb.com/v0/callsign/ABC123')));
@@ -93,7 +96,7 @@ test('hosted provider redirects are rejected without following the new destinati
   let calls = 0;
   const worker = createHostedHandler({ fetcher: async (url, options) => {
     calls++;
-    assert.ok(url.startsWith('https://api.adsb.lol/'));
+    assert.ok(url.startsWith('https://opendata.adsb.fi/'));
     assert.equal(options.redirect, 'manual');
     return new Response('', { status: 302, headers: { Location: 'https://other.example' } });
   } });

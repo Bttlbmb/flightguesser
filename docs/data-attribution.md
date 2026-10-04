@@ -6,7 +6,9 @@ The website bundles a small airport index, world geography and four recorded air
 
 [ADSB.lol](https://www.adsb.lol/docs/open-data/api/) publishes its API data under ODbL 1.0. The practice collection and preserved source responses derive from that data. Keep attribution and the licence obligations with any distributed derived data.
 
-Live routes prefer adsb.lol, whose published implementation uses Virtual Radar Server standing data. [adsbdb](https://www.adsbdb.com/) supplies the fallback callsign lookup. Preserve the provider that supplied each route. The sources may be missing or outdated, and their underlying route evidence was not shown to be independent. A second database is not confirmation of a flight plan.
+Hosted live positions use [adsb.fi](https://adsb.fi/) under its [personal, non-commercial API terms](https://github.com/adsbfi/opendata#terms). The hosted relay paces nearby requests at one per second per isolate, retains source timestamps and does not bundle or redistribute live snapshots. The Site remains private for personal play.
+
+Hosted live routes use adsbdb. The standalone local prototype prefers adsb.lol, whose published implementation uses Virtual Radar Server standing data. [adsbdb](https://www.adsbdb.com/) supplies the fallback callsign lookup. Preserve the provider that supplied each route. The sources may be missing or outdated, and their underlying route evidence was not shown to be independent. A second database is not confirmation of a flight plan.
 
 The four recordings were observed near Seoul on 3 October 2026 at 10:07:17 Seoul time (01:07:17 UTC). `scripts/prepare-practice.mjs` rebuilds them from `docs/evidence/selection-seoul-nearby.json` and the four matching `selection-*-route.json` responses. The [data-source findings](data-sources.md) explain what those observations establish.
 

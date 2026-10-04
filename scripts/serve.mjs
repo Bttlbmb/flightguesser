@@ -1,4 +1,4 @@
-import { upstreamForPath } from '../server/worker.js';
+import { upstreamForPath as hostedUpstreamForPath } from '../server/worker.js';
 import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
 import { realpath, stat } from 'node:fs/promises';
@@ -24,7 +24,7 @@ function send(res, status, body) {
   res.end(res.req.method === 'HEAD' ? undefined : text);
 }
 
-export { upstreamForPath } from '../server/worker.js';
+export function upstreamForPath(pathname) { return hostedUpstreamForPath(pathname, 'adsb.lol'); }
 export function createGameServer({ directory = resolve(projectRoot, 'public'), live = false, fetcher = fetch } = {}) {
   const root = resolve(directory);
   let canonicalRoot;
