@@ -54,10 +54,6 @@ h1 { font-size: clamp(32px, 6vw, 40px); line-height: 1.15; letter-spacing: -1.35
 .footer a { text-decoration: none; }
 .footer a:hover { text-decoration: underline; }
 .back { margin: 12px 0 20px; }
-.difficulty-control { display: grid; gap: 8px; margin: 0 0 22px; text-align: left; }
-.difficulty-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.place-form .difficulty-control { margin: 4px 0 0; }
-.round-end .difficulty-control { margin: 20px 0 8px; }
 .place-form { display: grid; gap: 12px; margin: 24px 0; }
 label { font-size: 14px; font-weight: 600; }
 select, input { min-height: 52px; width: 100%; padding: 13px 14px; border: 1px solid var(--control-line); border-radius: 6px; color: var(--ink); background: var(--surface); font-size: 16px; }

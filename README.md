@@ -28,7 +28,7 @@ The relay passes requests to adsb.lol from your computer. It runs only on localh
 - A city can serve several airports, and an airport can have several accepted cities. Tokyo covers Haneda and Narita; Seoul and Incheon both count for Incheon Airport. The [city policy](docs/city-destinations.md) explains the small curated list and its limits.
 - Your first missed city guess reveals a single **Distance & direction** clue from that city toward the main destination city. It stays fixed in the clue book. Later guesses reveal the next clue category without new city-distance or direction readings. City reference points are approximate and sometimes use airport positions.
 - The globe remains above the city input; all clue text, including direction labeled **First clue**, is in one clue book. Desktop shows the book beside the input and six guess rows. Phone shows it between the input and guesses, with a Hide/Show toggle and a visible clue count. It starts open, reopens for a new clue or result, and can be collapsed without spending a guess. Later clues give destination country, distance remaining, airline when available, then city initial; aircraft telemetry and origin are not clues. Revealing a clue yourself uses one guess and fills one board row; missing facts are skipped.
-- Choose **Normal** for kilometre values or **Hard** for destination distance ranges before starting. Hard mode uses 50 km bands below 1,000 km and 100 km bands from 1,000 km, with “<50 km” for nearby distances. Both the first-city clue and remaining-distance clue use the same bands. The choice stays fixed while playing; six guesses and sequential paid reveals apply in either mode.
+- Distance clues show kilometres. Every round uses the same six-guess rules.
 - Kraków and Athens are primary answers for KRK and ATH. Balice and Spata-Artemida remain accepted alternatives, including their city initials.
 - **Current heading** describes the aircraft at the observation; it can turn before arrival. The starting place is the area searched for a plane, not its departure city.
 - Consecutive rounds in the current play session avoid the same destination city, including different airports serving that city. Live and recorded rounds share that rule. If no different destination is available, the game offers recovery choices.
@@ -52,6 +52,8 @@ npm run preview -- --port=5184
 ```
 
 Deploy the generated `dist/` folder to an ordinary static web host. It contains the game, local data and licence notices; the relay and research evidence stay outside the build.
+
+The OpenAI-hosted version uses a same-origin Worker relay for live aircraft and route requests. Build it with `node scripts/build.mjs --hosted`; the Site manifest keeps the existing project identity and uses Worker hosting. The relay accepts fixed provider paths, limits request and response sizes, caches snapshots for at most 20 seconds, and respects provider pauses.
 
 Recorded practice is the dependable static experience. Earlier localhost browser checks could not read live aircraft data directly because the providers did not allow that browser origin. A public live deployment needs a successful check from its actual address, provider permission or an owned data service. See the dated [data-source findings](docs/data-sources.md).
 

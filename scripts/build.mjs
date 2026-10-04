@@ -1,5 +1,5 @@
-import { cp, mkdir, readFile, stat, rm } from 'node:fs/promises';
-import { join, basename } from 'node:path';
+import { cp, mkdir, readFile, stat, rm, readdir, writeFile } from 'node:fs/promises';
+import { join, basename, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -21,3 +21,25 @@ for (const asset of [
 const page = await readFile(join(output, 'index.html'), 'utf8');
 if (!page.includes('Flightguesser') || !page.includes('app.js')) throw new Error('Missing game entry point');
 console.log('Built static game in dist/');
+
+if (process.argv.includes('--hosted')) {
+  // Bundle the small text-only asset collection so the Worker needs no asset binding.
+  const types = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.json':'application/json; charset=utf-8', '.svg':'image/svg+xml', '.txt':'text/plain; charset=utf-8' };
+  const assets = {};
+  async function collect(directory, prefix = '') {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) continue;
+      const relative = prefix + '/' + entry.name;
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) await collect(path, relative);
+      else assets[relative] = { type: types[extname(entry.name)] ?? 'text/plain; charset=utf-8', body: await readFile(path, 'utf8') };
+    }
+  }
+  await collect(source);
+  const worker = await readFile(join(root, 'server/worker.js'), 'utf8');
+  await mkdir(join(output, 'server'), { recursive: true });
+  await writeFile(join(output, 'server/index.js'), worker + '\nexport default createHostedHandler({ assets: ' + JSON.stringify(assets) + ' });\n');
+  await mkdir(join(output, '.openai'), { recursive: true });
+  await cp(join(root, '.openai/hosting.json'), join(output, '.openai/hosting.json'));
+  console.log('Built hosted Worker with live data relay');
+}

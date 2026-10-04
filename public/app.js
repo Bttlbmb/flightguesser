@@ -3,7 +3,7 @@ import { airportLabel, countryName, mergeRouteAirports, hasMunicipality } from '
 import { indexCities, searchCities, cityLabel, destinationRepeatIds } from './destinations.js';
 import { validCoordinates, distanceKm } from './geo.js';
 import { rememberSelection } from './selection.js';
-import { createGame, submitGuess, revealClue, MAX_GUESSES, DIFFICULTIES } from './game.js';
+import { createGame, submitGuess, revealClue, MAX_GUESSES } from './game.js';
 
 const app = document.querySelector('#app');
 const announcer = document.querySelector('#announcer');
@@ -33,7 +33,6 @@ let practicePromise;
 let globePromise;
 let globeHTML;
 let practiceIndex = 0;
-let difficulty = 'normal';
 let lastPlace;
 let elsewhereCityIndex = 0;
 let retryTimer;
@@ -57,25 +56,10 @@ const focusHeading = () => {
   if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
 };
 
-function difficultyHTML(label = 'Difficulty') {
-  return `<div class="difficulty-control"><label for="difficulty-select">${label}</label>
-    <select id="difficulty-select" aria-describedby="difficulty-note"><option value="normal" ${difficulty === 'normal' ? 'selected' : ''}>Normal · precise distances</option><option value="hard" ${difficulty === 'hard' ? 'selected' : ''}>Hard · distance ranges</option></select>
-    <p class="difficulty-note" id="difficulty-note">Hard mode gives destination distance ranges. Six guesses in either mode.</p></div>`;
-}
-
-function setDifficulty(value) {
-  if (!DIFFICULTIES.includes(value)) throw new Error('Choose Normal or Hard difficulty.');
-  if (state.view === 'loading' || (state.view === 'game' && state.game.status === 'playing')) throw new Error('Finish the round before changing difficulty.');
-  difficulty = value;
-  const select = app.querySelector('#difficulty-select');
-  if (select) select.value = value;
-}
-
 function renderEntry() {
   state.view = 'entry';
   app.setAttribute('aria-busy', 'false');
   app.innerHTML = initialHTML;
-  app.querySelector('#difficulty-select').value = difficulty;
   focusHeading();
 }
 
@@ -89,7 +73,6 @@ function renderCities(message = '') {
     ${message ? `<p class="note" role="status">${escape(message)}</p>` : ''}
     <form id="city-form" class="place-form"><label for="city-select">City</label>
       <select id="city-select" required><option value="">Choose a city</option>${cities.map((city, index) => `<option value="${index}">${city.name}</option>`).join('')}</select>
-      ${difficultyHTML()}
       <button class="button primary" type="submit">Find a flight</button>
     </form><p class="privacy">City coordinates are sent to adsb.lol. Your device location isn’t used.</p>
   </section>`;
@@ -116,19 +99,22 @@ function renderError(error) {
   state.canLookElsewhere = canLookElsewhere;
   const blocked = error.code === 'network' && !error.relay;
   const limited = error.code === 'rate-limit';
-  const title = noNewRecording ? 'No different recorded destination.' : noNewDestination ? 'No different destination nearby.' : noFlight ? 'No puzzle in this patch of sky.' : limited ? 'A short pause.' : blocked ? 'Live data isn’t available here.' : 'We couldn’t find a flight.';
+  const routesUnavailable = error.code === 'route-unavailable';
+  const dataUnavailable = ['network', 'provider', 'invalid-data'].includes(error.code);
+  const title = noNewRecording ? 'No different recorded destination.' : noNewDestination ? 'No different destination nearby.' : noFlight ? 'No playable flight found.' : limited ? 'A short pause.' : routesUnavailable ? 'Flights found. Routes unavailable.' : dataUnavailable ? 'Live flight data is unavailable.' : 'We couldn’t open a flight.';
   const detail = blocked ? 'We couldn’t read the live aircraft data. Browser access restrictions or a connection problem can cause this. You can still play a recorded flight.'
     : limited ? `The aircraft service has asked us to wait. Try again in ${Math.max(1, error.retryAfter ?? 60)} seconds, or play a recorded flight.`
     : noNewDestination ? 'The usable flights we found share your last destination. Look elsewhere, search again, or play a recorded flight.'
     : noInterestingFlight ? 'The flights we found were heading back here or too close to landing. Look elsewhere, search again, or play a recorded flight.'
-    : noFlight ? 'We searched up to 463 km away. None of the fresh aircraft had a clear, single-leg reported route for this game.'
+    : noFlight ? 'There may be plenty of aircraft nearby, but we couldn’t match one to a fresh, usable destination for this game. Try another area or a recorded flight.'
+    : routesUnavailable ? 'We found aircraft, but the route service couldn’t provide their destinations. Search again or play a recorded flight.'
+    : dataUnavailable ? 'We couldn’t read the live aircraft data. This doesn’t mean there are no flights nearby. Search again or play a recorded flight.'
     : error.message;
   const retryAfter = limited ? Math.max(1, error.retryAfter ?? 60) : 0;
   state.retryAt = Date.now() + retryAfter * 1000;
   app.innerHTML = `<section class="error"><p class="eyebrow">${noFlight || noNewDestination ? 'NO GUESSWORK ABOUT THE DATA' : 'THE SKY CAN WAIT'}</p>
     <h1>${escape(title)}</h1><p class="note">${escape(detail)}</p>
     ${canLookElsewhere ? '<button class="button primary" data-action="elsewhere">Look elsewhere</button>' : ''}
-    ${difficultyHTML()}
     <button class="button ${canLookElsewhere ? 'secondary' : 'primary'}" data-action="${noNewRecording ? 'cities' : 'practice'}">${noNewRecording ? 'Choose a starting city' : 'Play a recorded flight'}</button>
     ${lastPlace && !blocked ? `<button class="button secondary" data-action="retry" ${limited ? 'disabled' : ''}>${limited ? 'Try again shortly' : 'Search again'}</button>` : ''}
     ${!blocked && !noNewRecording ? '<button class="text-button" data-action="cities">Choose another city</button>' : '<button class="text-button" data-action="home">Back to start</button>'}
@@ -212,7 +198,7 @@ async function startSearch(place) {
       },
     });
     if (token !== generation) return;
-    round.route = await enrichRouteAirline(round.route, { signal: searchController.signal });
+    round.route = await enrichRouteAirline(round.route, { signal: searchController.signal, relay: config.relay });
     if (token !== generation) return;
     await openRound(round, token);
     if (token === generation) playedAircraft.add(round.aircraft.hex);
@@ -308,7 +294,7 @@ async function openRound(round, token) {
   const cityEndpoint = endpoint => endpoint ? { ...endpoint, city: mergedAirports.find(airport => airport.id === endpoint.id)?.city ?? endpoint.city } : endpoint;
   let game;
   try {
-    game = createGame({ ...round, route: { ...round.route, origin: cityEndpoint(round.route.origin), destination: cityEndpoint(round.route.destination) } }, { difficulty });
+    game = createGame({ ...round, route: { ...round.route, origin: cityEndpoint(round.route.origin), destination: cityEndpoint(round.route.destination) } });
   } catch {
     throw new DataError('city', 'This reported airport has no usable city name. Try another flight or a recorded round.');
   }
@@ -319,7 +305,7 @@ async function openRound(round, token) {
   selectionHistory = rememberSelection(selectionHistory, game.round);
   renderGame();
   focusHeading();
-  announce(`${round.mode === 'practice' ? 'Recorded practice round' : 'Live flight snapshot'}. ${game.difficulty === 'hard' ? 'Hard' : 'Normal'} difficulty. Guess the destination city. Six guesses. Linked cities served by the reported airport also count.`);
+  announce(`${round.mode === 'practice' ? 'Recorded practice round' : 'Live flight snapshot'}. Guess the destination city. Six guesses. Linked cities served by the reported airport also count.`);
 }
 
 function observationLabel(round) {
@@ -393,7 +379,7 @@ function renderGame() {
   const game = state.game;
   const round = game.round;
   const finished = game.status !== 'playing';
-  const roundMeta = `<div class="round-meta">${round.mode === 'practice' ? '<span class="badge practice">Practice</span>' : ''}<span class="badge">${game.difficulty === 'hard' ? 'Hard' : 'Normal'}</span><span>${escape(round.mode === 'practice' ? observationLabel(round) : `Near ${round.place.kind === 'device' ? 'you' : round.place.name}`)}</span></div>`;
+  const roundMeta = `<div class="round-meta">${round.mode === 'practice' ? '<span class="badge practice">Practice</span>' : ''}<span>${escape(round.mode === 'practice' ? observationLabel(round) : `Near ${round.place.kind === 'device' ? 'you' : round.place.name}`)}</span></div>`;
   app.innerHTML = `<section class="game${finished ? ' finished' : ''}">
     ${roundMeta}
     ${finished ? endHTML(game) : '<h1>Where is it going?</h1>'}
@@ -428,7 +414,6 @@ function endHTML(game) {
     <p class="clue-detail">${escape(destination.name)} (${escape(destination.code)}) · ${escape(countryName(destination.country))}</p>
     ${otherCities.length ? `<p class="note">Also accepted: ${otherCities.map(city => escape(cityLabel(city))).join(', ')}.</p>` : ''}
     <p class="route-note">${escape(round.aircraft.callsign)} · ${escape(airportLabel(round.route.origin))} → ${escape(destination.code)}</p>
-    ${difficultyHTML('Next round difficulty')}
     <button class="button primary" data-action="next">${round.mode === 'practice' ? 'Another recorded flight' : 'Find another flight'}</button>
     <div class="round-options"><button class="text-button" data-action="cities">Choose a city</button><button class="text-button" data-action="home">Back to start</button></div></section>`;
 }
@@ -574,10 +559,6 @@ function nextClue() {
   return true;
 }
 
-app.addEventListener('change', event => {
-  if (event.target.id === 'difficulty-select') setDifficulty(event.target.value);
-});
-
 app.addEventListener('input', event => {
   if (event.target.id !== 'destination-input') return;
   // Editing the label clears the selected city ID; free text is never a guess.
@@ -629,14 +610,14 @@ function showInfo(kind) {
   const content = document.querySelector('#info-content');
   if (kind === 'help') {
     title.textContent = 'How to play';
-    content.innerHTML = '<ol><li>Choose Normal or Hard mode, then find a nearby flight or choose a starting city. Your starting place is where we look for a plane, not where it took off.</li><li>Search for its destination city, select it and press Guess. You have six tries.</li><li>Your first missed city guess reveals one combined distance-and-direction clue from that city to the main destination city. It stays fixed in the clue book. Later misses reveal the next clue without adding new distance or direction readings.</li></ol><p>Current heading describes the plane at the observation. It can turn before arrival.</p><p>Normal mode gives kilometre values; Hard mode gives ranges for both destination distances. Difficulty stays fixed for the round.</p><p>All clues, including the first direction clue, are in the clue book. On phone, you can hide or show the book; a new clue reopens it.</p><p>After your first miss, the clues give destination country, distance remaining, airline when available, then a city initial. Missing facts are skipped.</p><p>Seoul and Incheon both count for Incheon Airport. Tokyo counts for Haneda and Narita. Other linked cities served by the reported airport also count.</p><p>Revealing an extra clue uses one guess and fills a line on your guess board. Routes come from a database and can be wrong; the reported airport is shown at the end.</p><p>If live data is unavailable, you can play a recorded flight. These rounds are labelled “Practice”.</p>';
+    content.innerHTML = '<ol><li>Find a nearby flight or choose a starting city. Your starting place is where we look for a plane, not where it took off.</li><li>Search for its destination city, select it and press Guess. You have six tries.</li><li>Your first missed city guess reveals one combined distance-and-direction clue from that city to the main destination city. It stays fixed in the clue book. Later misses reveal the next clue without adding new distance or direction readings.</li></ol><p>Current heading describes the plane at the observation. It can turn before arrival.</p><p>All clues, including the first direction clue, are in the clue book. On phone, you can hide or show the book; a new clue reopens it.</p><p>After your first miss, the clues give destination country, distance remaining, airline when available, then a city initial. Missing facts are skipped.</p><p>Seoul and Incheon both count for Incheon Airport. Tokyo counts for Haneda and Narita. Other linked cities served by the reported airport also count.</p><p>Revealing an extra clue uses one guess and fills a line on your guess board. Routes come from a database and can be wrong; the reported airport is shown at the end.</p><p>If live data is unavailable, you can play a recorded flight. These rounds are labelled “Practice”.</p>';
   } else {
     title.textContent = 'About the data';
     const round = state.view === 'game' ? state.game.round : null;
     content.innerHTML = `<p>Aircraft positions and flight clues come from <a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noopener noreferrer">adsb.lol</a> under ODbL 1.0. Routes use adsb.lol, with <a href="https://www.adsbdb.com/" target="_blank" rel="noopener noreferrer">adsbdb</a> if a lookup is unavailable. Airline names also use adsbdb when available. Routes match a flight identifier, called a callsign, to airports. These database matches can be stale or wrong; they aren’t confirmed flight plans.</p>
       <p>We skip positions over a minute old, unclear routes and routes with stops. Each round keeps its original observation, so the position and answer stay fixed while you play.</p>
       <h3>What the clues mean</h3><p>Current heading shows where the aircraft’s nose points at the observation. When it isn’t reported, current direction of travel shows its movement over the ground. The plane can turn before arrival; the starting place is the observation area, not its departure point. An airline clue uses the operating airline reported for the flight, when its name is available. Distance remaining is a straight-line estimate to the main destination city; the actual flight path may be longer. The combined distance-and-direction clue starts at your first guessed city and stays fixed. The other clues give the destination country and the first letter of an accepted city.</p>
-      <h3>Distances and map</h3><p>Guess feedback points from your chosen city toward the main destination city. The distance clue runs from the aircraft to that city. Both use straight-line distances to city reference points; where city coordinates are unavailable, we use an airport position. Normal mode gives kilometre values and Hard mode gives distance ranges. We don’t estimate arrival times.</p>
+      <h3>Distances and map</h3><p>Guess feedback points from your chosen city toward the main destination city. The distance clue runs from the aircraft to that city. Both use straight-line distances to city reference points; where city coordinates are unavailable, we use an airport position. We don’t estimate arrival times.</p>
       <p>Linked cities can also count as correct. The reported route and globe use the exact airports. The dotted line appears after the round and illustrates the reported route; it isn’t a recorded flight path.</p>
       ${round ? `<h3>This round</h3><p>${escape(round.mode === 'practice' ? 'Recorded practice observation' : 'Aircraft observed')} ${escape(new Date(round.aircraft.positionObservedAt).toLocaleString('en-GB', { timeZone: 'UTC' }))} UTC. Route source: ${escape(round.route.provider)}.</p>` : ''}
       <h3>Your location</h3><p>Permission is requested only when you press “Use my location”. Approximate coordinates are sent to the aircraft provider. This game doesn’t save your location or use analytics. Providers may keep their own request logs.</p>
@@ -653,10 +634,10 @@ dialog.addEventListener('click', event => { if (event.target === dialog) { const
 // Optional proposed browser API. These actions use the same state as the UI;
 // the hidden answer and precise device coordinates are never exposed while playing.
 function visibleGameState() {
-  if (state.view !== 'game') return { view: state.view, difficulty };
+  if (state.view !== 'game') return { view: state.view };
   const game = state.game;
   return {
-    view: 'game', mode: game.round.mode, difficulty: game.difficulty, nextDifficulty: difficulty, observation: observationLabel(game.round),
+    view: 'game', mode: game.round.mode, observation: observationLabel(game.round),
     status: game.status, guessesLeft: MAX_GUESSES - game.guesses.length, extraClues: game.assistance,
     clues: (game.status === 'playing' ? game.clues.slice(0, game.clueIndex + 1) : game.clues).map(plainClue),
     guesses: game.guesses.map(guess => {
@@ -681,9 +662,6 @@ function registerGameTools() {
   const stringSchema = key => ({ type: 'object', properties: { [key]: { type: 'string', minLength: 1, maxLength: 100 } }, required: [key], additionalProperties: false });
   const tools = [
     { name: 'read_game_state', description: 'Read the visible round, revealed clues and guess history. Does not reveal a hidden answer or device coordinates.', inputSchema: empty, readOnly: true, execute: visibleGameState },
-    { name: 'set_difficulty', description: 'Choose normal or hard difficulty for the next round. Hard mode gives destination distance ranges. Available before starting or after finishing a round; never changes a playing round.', inputSchema: { type: 'object', properties: { difficulty: { type: 'string', enum: DIFFICULTIES } }, required: ['difficulty'], additionalProperties: false }, execute: input => {
-      setDifficulty(toolString(input, 'difficulty')); return visibleGameState();
-    } },
     { name: 'start_practice_round', description: 'Start a clearly labelled recorded real-flight practice round. Replaces any current round; never uses device location.', inputSchema: empty, execute: async () => { await practice(); return visibleGameState(); } },
     { name: 'start_city_round', description: 'Choose a starting city and search for a live flight nearby. This sets the observation place, not a destination guess. Sends city coordinates to the aircraft provider and replaces the current round.', inputSchema: stringSchema('city'), execute: async input => {
       const name = toolString(input, 'city');

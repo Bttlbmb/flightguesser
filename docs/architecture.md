@@ -1,6 +1,6 @@
 # Architecture
 
-Flightguesser is one static game page. It joins an aircraft observation to a reported route, freezes both, and gives the player six destination-city guesses. The optional localhost relay makes live development possible where a browser cannot reach the aircraft provider directly.
+Flightguesser is one browser game page. The OpenAI Site serves its assets and a bounded live-data relay through a Worker. It joins an aircraft observation to a reported route, freezes both, and gives the player six destination-city guesses. The optional localhost relay makes live development possible where a browser cannot reach the aircraft provider directly.
 
 ## Components
 
@@ -51,7 +51,7 @@ The globe stays above the city form, separately from all text clues. One clue bo
 
 After direction and the first-guess clue, flight clues give destination country, straight-line distance remaining to the primary destination city, the airline when named, then the initials of every accepted destination city. Aircraft altitude, speed, vertical state and origin are excluded even when reported. The clue list remains independent of the six-attempt allowance. Distance/direction appears only as that single first-guess clue: later history rows, announcements and browser-tool state do not expose extra city-distance or direction readings. A win leads with the city actually guessed; other endings lead with the primary city. Results retain the exact reported airport and route endpoints; source and uncertainty are explained in the data dialog.
 
-Difficulty is selected before a round (or for the next round at the result). The game stores it as an immutable property. Normal mode shows rounded kilometres; Hard mode bands both destination distances in 50 km intervals below 1,000 km and 100 km intervals from 1,000 km, with “<50 km” below 50 km. Bands contain the unrounded calculation; the upper endpoint is exclusive. Difficulty changes neither direct membership nor the six-attempt budget. Manual reveals still follow the next available clue and cost one guess.
+The interface uses one ruleset with precise kilometre clues and six attempts. The former difficulty menu, mode badges and set_difficulty browser action have been removed.
 
 ## Geographic feedback
 
@@ -69,10 +69,12 @@ Location is requested only after a player action and held in memory. Provider se
 
 The local relay binds to loopback, checks Host, Origin and browser request metadata, and accepts only fixed nearby/route paths. It caps concurrent and recent uncached requests, response bytes, cache entries and request time. Provider pauses are shared across tabs. These development safeguards do not make it a public production service.
 
+The default static build copies only `public/` to `dist/`. The `--hosted` build also emits a self-contained `dist/server/index.js`, containing the asset collection and server/worker.js relay. Its same-origin API covers telemetry, preferred routes, fallback callsign routes and optional airline names. Site authentication cookies are retained only for same-origin requests. Private access is enforced by the Sites platform. Relay cache and pause limits apply per Worker isolate; they are not a provider-wide quota.
+
 The static build copies only `public/` to `dist/`. Live browser requests require the provider to allow the site's origin, a browser rule called CORS. Earlier checks failed that requirement; [data-source findings](data-sources.md) record the evidence. An actual hosted-origin check is required before claiming reliable public live play.
 
 ## Optional browser tools
 
-When supported, feature-detected WebMCP actions use the same practice, starting-city, city-search, guess and clue operations as the UI. `search_cities` returns stable IDs for `submit_city_guess`; `start_city_round` chooses the observation area. Strict inputs and ordinary game guards apply. `set_difficulty` uses the same Normal/Hard selection as the interface, rejects playing/loading rounds, and changes only the next round preference after a result. Visible state includes current and next difficulty without hidden geometry.
+When supported, feature-detected WebMCP actions use the same practice, starting-city, city-search, guess and clue operations as the UI. `search_cities` returns stable IDs for `submit_city_guess`; `start_city_round` chooses the observation area. Strict inputs and ordinary game guards apply. Browser state includes only the visible round, clues and guesses.
 
 State and search omit the hidden destination and accepted-answer list until the round ends, and never expose device coordinates. Unsupported browsers use the normal interface. This experimental capability is optional.

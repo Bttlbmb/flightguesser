@@ -1,3 +1,4 @@
+import { upstreamForPath } from '../server/worker.js';
 import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
 import { realpath, stat } from 'node:fs/promises';
@@ -23,17 +24,7 @@ function send(res, status, body) {
   res.end(res.req.method === 'HEAD' ? undefined : text);
 }
 
-export function upstreamForPath(pathname) {
-  const nearby = pathname.match(/^\/api\/nearby\/(-?\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)\/(50|100|250)$/);
-  const route = pathname.match(/^\/api\/route\/([A-Z]{3}\d[A-Z0-9]{0,6})\/(-?\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)$/);
-  if (!nearby && !route) return null;
-  const [lat, lon] = nearby ? [Number(nearby[1]), Number(nearby[2])] : [Number(route[2]), Number(route[3])];
-  if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
-  return nearby
-    ? `https://api.adsb.lol/v2/point/${lat}/${lon}/${nearby[3]}`
-    : `https://api.adsb.lol/api/0/route/${route[1]}/${lat}/${lon}`;
-}
-
+export { upstreamForPath } from '../server/worker.js';
 export function createGameServer({ directory = resolve(projectRoot, 'public'), live = false, fetcher = fetch } = {}) {
   const root = resolve(directory);
   let canonicalRoot;

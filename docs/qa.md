@@ -2,6 +2,12 @@
 
 Checks serve two different purposes: offline tests verify data and rules, while a browser review checks what a player can see and operate. A fixture or resized desktop browser cannot establish live-provider access, a physical phone keyboard or screen-reader speech.
 
+## Hosted live search and simpler controls: 4 October 2026
+
+All 124 offline tests pass. New checks cover a full browser-client search through hosted telemetry and fallback routes, same-origin authentication, rejection of other origins and unsupported paths, expiring cached responses, unreadable and oversized bodies, concurrency limits, and provider cooldowns.
+
+The browser rendered the simplified entry with no difficulty selector and opened a real live round near Seoul through the hosted Worker preview. This establishes live provider access from the local relay runtime; production access is checked separately after publication. Airport proximity alone does not guarantee a playable route: grounded aircraft, arrivals and unverified routes are still excluded. Earlier difficulty-mode audits below describe historical versions.
+
 ## Look elsewhere recovery: 4 October 2026
 
 The new primary action appears after an empty, arrival-only or same-destination live search. One click searches one other listed city, names the area during loading and in the round, and retains difficulty, played-aircraft exclusions and destination history. The action is before the difficulty controls and remains visible without scrolling at 390 × 450. Provider/network errors and rate-limit pauses do not offer it.

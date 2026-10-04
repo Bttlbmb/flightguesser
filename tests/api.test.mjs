@@ -326,11 +326,11 @@ test('cancellation after a route body resolves cannot return a playable flight',
   } }), error => error.name === 'AbortError');
 });
 
-test('local configuration is optional, bounded, and never queried on a public host', async () => {
+test('relay configuration is optional and bounded on hosted and local origins', async () => {
   let requests = 0;
   const fetcher = async () => { requests++; return json({ relay: true }); };
-  assert.deepEqual(await runtimeConfig({ hostname: 'example.com', fetcher }), { relay: false });
-  assert.equal(requests, 0);
+  assert.deepEqual(await runtimeConfig({ hostname: 'example.com', fetcher }), { relay: true });
+  assert.equal(requests, 1);
   assert.deepEqual(await runtimeConfig({ hostname: 'localhost', fetcher }), { relay: true });
   assert.deepEqual(await runtimeConfig({ hostname: 'localhost', fetcher: async () => json({ relay: 'true' }) }), { relay: false });
   // Keep this timer referenced: AbortSignal.timeout alone does not keep Node alive.

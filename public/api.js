@@ -6,7 +6,7 @@ const MAX_SELECTED_POSITION_AGE_MS = 60000;
 let providerPauseUntil = 0;
 const airlineNames = new Map();
 
-export async function enrichRouteAirline(route, { signal, fetcher = fetch, timeoutMs = 1500 } = {}) {
+export async function enrichRouteAirline(route, { signal, fetcher = fetch, timeoutMs = 1500, relay = false } = {}) {
   if (signal?.aborted) throw new DOMException('Search cancelled', 'AbortError');
   const code = route?.airlineCode;
   if (!/^[A-Z]{3}$/.test(code ?? '') || !route.callsign?.startsWith(code) || normalizeAirline(route.airline, code, route.airline?.provider)) return route;
@@ -16,9 +16,9 @@ export async function enrichRouteAirline(route, { signal, fetcher = fetch, timeo
   // into a failed round, and no identity is guessed from a callsign prefix alone.
   const timeout = AbortSignal.timeout(timeoutMs);
   try {
-    const response = await fetcher(`https://api.adsbdb.com/v0/airline/${code}`, {
+    const response = await fetcher(relay ? `/api/airline/${code}` : `https://api.adsbdb.com/v0/airline/${code}`, {
       signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-      credentials: 'omit', referrerPolicy: 'no-referrer',
+      credentials: relay ? 'same-origin' : 'omit', referrerPolicy: 'no-referrer',
     });
     if (signal?.aborted) throw new DOMException('Search cancelled', 'AbortError');
     if (!response.ok) return route;
@@ -55,7 +55,7 @@ export async function requestJson(url, { signal, fetcher = fetch, timeoutMs = 10
   };
   checkCancelled();
   let response;
-  try { response = await fetcher(url, { signal: combined, credentials: 'omit', referrerPolicy: 'no-referrer' }); }
+  try { response = await fetcher(url, { signal: combined, credentials: url.startsWith('/api/') ? 'same-origin' : 'omit', referrerPolicy: 'no-referrer' }); }
   catch {
     checkCancelled();
     throw new DataError('network', 'The aircraft service could not be reached from this browser.');
@@ -81,11 +81,10 @@ export async function requestJson(url, { signal, fetcher = fetch, timeoutMs = 10
   }
 }
 
-export async function runtimeConfig({ hostname = location.hostname, fetcher = fetch, timeoutMs = 1500 } = {}) {
-  if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname)) return { relay: false };
+export async function runtimeConfig({ hostname = location.hostname, fetcher = fetch, timeoutMs = 1500, relay = false } = {}) {
   try {
-    // A static localhost host may lack this endpoint; do not hold up a live search.
-    const response = await fetcher('/api/config', { credentials: 'omit', signal: AbortSignal.timeout(timeoutMs) });
+    // Hosted and localhost relays announce themselves; static previews can omit it.
+    const response = await fetcher('/api/config', { credentials: 'same-origin', signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) return { relay: false };
     const config = await response.json();
     return { relay: config.relay === true };
@@ -170,7 +169,7 @@ async function findWithinBudget(place, {
         if (!route && fallbackAllowed && routeRequests - radiusStart < allowance && routeRequests < MAX_ROUTE_LOOKUPS) {
           routeRequests++;
           try {
-            const raw = await request(`https://api.adsbdb.com/v0/callsign/${aircraft.callsign}`, 6000);
+            const raw = await request(relay ? `/api/callsign/${aircraft.callsign}` : `https://api.adsbdb.com/v0/callsign/${aircraft.callsign}`, 6000);
             route = normalizeRoute(raw, aircraft, 'adsbdb');
           } catch (error) {
             if (error.name === 'AbortError' || error.code === 'rate-limit' || error.code === 'comparison-complete') throw error;
