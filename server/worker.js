@@ -53,7 +53,7 @@ async function readJson(response) {
   JSON.parse(text);
   return { text, size };
 }
-export function createHostedHandler({ assets = {}, fetcher = fetch, now = Date.now } = {}) {
+export function createHostedHandler({ assets = {}, fetcher = (url, options) => globalThis.fetch(url, options), now = Date.now } = {}) {
   const cache = new Map();
   const recent = [];
   let bytes = 0, inFlight = 0, pauseUntil = 0;
@@ -118,7 +118,7 @@ export function createHostedHandler({ assets = {}, fetcher = fetch, now = Date.n
         bytes += entry.size;
         return json(200, entry.text);
       } catch (error) {
-        console.warn('Flight relay failure', error.name);
+        console.warn('Flight relay failure', error.name, String(error.message).replace(/https?:\/\/\S+/g, '[upstream]').slice(0, 300));
         return json(502, { error: 'Live flight data is unavailable' });
       } finally {
         clearTimeout(timer);
