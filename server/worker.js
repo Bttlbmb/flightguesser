@@ -98,7 +98,7 @@ export function createHostedHandler({ assets = {}, fetcher = (url, options) => g
       try {
         const response = await fetcher(upstream, {
           signal: timeout.signal,
-          redirect: 'error',
+          redirect: 'manual',
           headers: { Accept: 'application/json', 'User-Agent': 'Flightguesser/0.1 (+https://flightguesser.cocoa-robin-0598.chatgpt.site)' },
         });
         if (response.status === 429) {

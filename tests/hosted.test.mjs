@@ -8,7 +8,7 @@ const json = value => new Response(JSON.stringify(value));
 
 test('hosted relay rejects other origins, unsupported endpoints, methods and redirects', async () => {
   let calls = 0;
-  const worker = createHostedHandler({ fetcher: async (_url, options) => { calls++; assert.equal(options.redirect, 'error'); return json({ ac: [] }); } });
+  const worker = createHostedHandler({ fetcher: async (_url, options) => { calls++; assert.equal(options.redirect, 'manual'); return json({ ac: [] }); } });
   for (const [path, init, status] of [
     ['/api/nearby/0/0/50', { method: 'HEAD' }, 405],
     ['/api/nearby/0/0/50', { headers: { Origin: 'https://other.example' } }, 403],
@@ -86,4 +86,17 @@ test('hosted relay works when the runtime supplies no incoming Request.signal', 
   } });
   const response = await worker.fetch({ url: origin + '/api/nearby/0/0/50', method: 'GET', headers: new Headers() });
   assert.equal(response.status, 200);
+});
+
+
+test('hosted provider redirects are rejected without following the new destination', async () => {
+  let calls = 0;
+  const worker = createHostedHandler({ fetcher: async (url, options) => {
+    calls++;
+    assert.ok(url.startsWith('https://api.adsb.lol/'));
+    assert.equal(options.redirect, 'manual');
+    return new Response('', { status: 302, headers: { Location: 'https://other.example' } });
+  } });
+  assert.equal((await worker.fetch(req('/api/nearby/0/0/50'))).status, 502);
+  assert.equal(calls, 1);
 });
