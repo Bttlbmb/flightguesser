@@ -1,0 +1,46 @@
+{
+  "qualification": "Current source in Chromium desktop and emulated phone. Provider traffic intercepted; no live-provider/CORS or physical-phone claim.",
+  "cases": [
+    {
+      "width": 1440,
+      "height": 1000,
+      "test": "three live-fixture rounds, hidden answer and session rotation",
+      "answers": [
+        "Beijing",
+        "Taoyuan",
+        "Singapore"
+      ]
+    },
+    {
+      "width": 1440,
+      "height": 1000,
+      "test": "arrival-only recovery, readable actions and no horizontal overflow"
+    },
+    {
+      "width": 1440,
+      "height": 1000,
+      "test": "cancelled search stays closed and later fresh search opens"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "test": "three live-fixture rounds, hidden answer and session rotation",
+      "answers": [
+        "Tokyo",
+        "Taoyuan",
+        "Beijing"
+      ]
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "test": "arrival-only recovery, readable actions and no horizontal overflow"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "test": "cancelled search stays closed and later fresh search opens"
+    }
+  ],
+  "errors": []
+}

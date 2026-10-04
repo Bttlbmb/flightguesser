@@ -1,0 +1,70 @@
+Flightguesser gameplay replay — 4 October 2026
+
+The selector substantially improves destination variety and removes tested local-arrival bias. Aggregate slot use rises as answer repetition falls. Fresh puzzles remain forgiving for these knowledgeable agent roles.
+New selection: Normal 1.91 slots overall and 2.52 on first answer exposures; Hard 1.85 overall and 2.42 on first answer exposures. Slots include paid clues. 108 of 108 new-selector rounds won.
+All six sessions reuse one sky snapshot. Their later memory wins cannot establish live-game challenge, and fresh old-selector exposures cover only Seoul and Jeju.
+Country arrives early in the current game. Czechia strongly narrows Prague; Singapore and Hong Kong region clues nearly supply their city answers. Airline information usually arrives after knowledgeable players have solved the puzzle.
+The weakest selected case was Dalian: a substantially divergent heading plus Ganjingzi/Dalian naming made it harder through ambiguity and picker knowledge. Qingdao also displays Jiaodong, Jiaozhou with J rather than the expected familiar-city initial. These are more promising improvement targets than reducing the six-slot budget.
+Hard ranges retain more candidate cities than precise distances, but this is an information diagnostic rather than a human difficulty estimate. Fresh contexts, coverage sampling and small role counts prevent a calibrated mode difficulty claim.
+Priority follow-ups: sourced familiar served-city mappings for Qingdao/Dalian, broader dated recordings and sky samples, then novice and experienced human testing. Do not infer worldwide variety or an optimal guess budget from this single capture.
+
+Scope and method
+
+Six fresh blind agent contexts: three strategies in each current difficulty. Each plays 36 rounds, alternating six recorded three-round sessions from old and new selection. Selection policy and answers hidden while playing. Same policy/session observations and role-specific order in both difficulties. Only visible clues and current city-picker search; no source, coordinates, external lookups or other sessions. A text adapter omits visual globe interpretation. Sequences reset selector history between three-round blocks as in the original replay, but player memory persists throughout its 36 rounds.
+
+Chosen six sessions deliberately cover all eleven new-selector answer cities, including awkward names and a weak heading. This is a coverage sample, not an unbiased estimate of live traffic. Both policies use the exact same chosen seeds; old sessions contain Seoul/Jeju/Seoul. No provider requests; original observation timestamps are retained.
+
+Matched current-rule results (slots include paid reveals and losses)
+Policy / difficulty | rounds | wins | mean slots | fresh-answer rounds/wins/mean slots | first-slot memory wins
+baseline-normal | 54 | 54 | 1.24 | 5/5/2.8 | 46
+baseline-hard | 54 | 54 | 1.3 | 5/5/3 | 45
+new-normal | 54 | 54 | 1.91 | 31/31/2.52 | 22
+new-hard | 54 | 54 | 1.85 | 31/31/2.42 | 22
+
+Agent strategy results
+Player | old mean slots / wins | new mean slots / wins
+geography-normal | 1.22 / 18 | 1.5 / 18
+geography-hard | 1.22 / 18 | 1.61 / 18
+aviation-normal | 1.17 / 18 | 1.78 / 18
+aviation-hard | 1.17 / 18 | 1.5 / 18
+cluefirst-normal | 1.33 / 18 | 2.44 / 18
+cluefirst-hard | 1.5 / 18 | 2.44 / 18
+
+Repetition and variety
+The full twenty three-round sessions are used for distribution estimates; the six selected playtest sessions intentionally cover all eleven answer cities.
+baseline: 60/60 playable; 2 cities, 1 countries/regions; top answer share 67%; effective equally likely answers 1.89; mean 2 distinct answers per three-round session; 0/20 full sessions with all answers different; remaining-distance bands {"regional":60,"medium":0,"long":0}; 40 local answers; 20 headings over 45 degrees from destination.
+new: 59/60 playable; 11 cities, 8 countries/regions; top answer share 22%; effective equally likely answers 8.8; mean 2.95 distinct answers per three-round session; 19/20 full sessions with all answers different; remaining-distance bands {"regional":38,"medium":6,"long":15}; 0 local answers; 3 headings over 45 degrees from destination.
+
+Destination-level fresh exposure difficulty
+Answer | fresh rounds | wins | mean slots
+Seoul | 6 | 6 | 2.83
+Jeju City | 6 | 6 | 2.83
+Prague | 6 | 6 | 3
+Osaka | 6 | 6 | 1.83
+Almaty | 6 | 6 | 2.67
+Shanghai (Pudong) | 6 | 6 | 2.33
+Singapore | 6 | 6 | 2.5
+Fukuoka | 6 | 6 | 1.67
+Jiaodong, Jiaozhou | 6 | 6 | 2.17
+Ganjingzi, Dalian | 6 | 6 | 3.5
+Taipei | 6 | 6 | 2.67
+Hong Kong | 6 | 6 | 2.33
+
+Clue precision
+49 actual first misses: median matching city objects 1 with precise Normal distance and 9 with Hard ranges. Unique Normal matches 46; unique Hard matches 2. Diagnostic enumeration of indexed city objects consistent with the actual first-reference clue. Same reference cities analyzed under both distance formats, plus destination country only when already visible. Automated solver upper bound; unavailable to blind players.
+
+Verification
+216 completed logs (13 captured aircraft and 12 initial text clue signatures) replayed against unchanged current game/search; 340 accepted actions, 680 hidden-answer states checked. Source and selection-replay hashes unchanged.
+Browser playback: 12 cases, 0 uncaught errors.
+119 current offline tests passed.
+
+1. One recorded Seoul sky moment and sampled explicit route associations; no current live-provider coverage or human win rate.
+2. Six LLM agents share an underlying model. Roles change strategies; they do not establish novice/expert population performance.
+3. Six three-round sessions deliberately cover all eleven available new-selector answers. Harder or rarer cities are overrepresented relative to the full selector replay.
+4. Counterbalanced old/new order and fresh separate contexts for Normal/Hard. Memory within each 36-round context still accelerates repeated answers and shared Jeju exposures. Fresh answer and opening scores are separated.
+5. Selector history resets between recorded three-round blocks, matching saved replay. Player memory persists. These are not thirty-six continuously updating live sky observations.
+6. Text adapter omits visual globe interpretation, mouse/touch interactions and latency. Browser playback separately verifies selected decisions and visible clue flow.
+7. Difficulty/interest/frustration ratings are subjective agent judgments, not calibrated human enjoyment measures.
+8. Exact candidate counts enumerate city objects with known coordinates as an analysis upper bound; agents had neither coordinates nor index access.
+
+Evidence: rounds.json; summary.json; harness.mjs; analyze.mjs; browser/.

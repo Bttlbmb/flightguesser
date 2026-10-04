@@ -1,0 +1,348 @@
+{
+  "apiRuns": 49,
+  "apiPassed": 49,
+  "apiFailures": [],
+  "edgeRuns": 6,
+  "edgePassed": 6,
+  "edgeFailures": [],
+  "groups": {
+    "local-arrival-300km-vs-overflight": 6,
+    "short-approach-vs-regional-outbound": 6,
+    "local-only-reject-even-300km-remaining": 6,
+    "short-only-nonlocal-reject": 6,
+    "actual-displayed-heading-preference": 6,
+    "tokyo-haneda-narita-alias-excluded": 6,
+    "sparse-island-regional-is-playable": 6,
+    "contradictory-route-never-overridden": 6,
+    "twelve-requests-no-local-fallback": 1
+  },
+  "capture": [
+    {
+      "callsign": "EVA154",
+      "destination": "Seoul",
+      "airport": "ICN",
+      "eligible": false,
+      "remainingKm": 68,
+      "headingError": 91,
+      "curated": true,
+      "local": true
+    },
+    {
+      "callsign": "APJ736",
+      "destination": "Osaka",
+      "airport": "KIX",
+      "eligible": true,
+      "remainingKm": 751,
+      "headingError": 1,
+      "curated": false,
+      "local": false
+    },
+    {
+      "callsign": "CAL160",
+      "destination": "Seoul",
+      "airport": "ICN",
+      "eligible": false,
+      "remainingKm": 63,
+      "headingError": 37,
+      "curated": true,
+      "local": true
+    },
+    {
+      "callsign": "CSN686",
+      "destination": "Ganjingzi, Dalian",
+      "airport": "DLC",
+      "eligible": true,
+      "remainingKm": 469,
+      "headingError": 72,
+      "curated": false,
+      "local": false
+    },
+    {
+      "callsign": "PTA511",
+      "destination": "Osaka",
+      "airport": "KIX",
+      "eligible": true,
+      "remainingKm": 658,
+      "headingError": 1,
+      "curated": false,
+      "local": false
+    },
+    {
+      "callsign": "AAR8941",
+      "destination": "Jeju City",
+      "airport": "CJU",
+      "eligible": true,
+      "remainingKm": 389,
+      "headingError": 0,
+      "curated": true,
+      "local": false
+    },
+    {
+      "callsign": "FDX5132",
+      "destination": "Seoul",
+      "airport": "ICN",
+      "eligible": false,
+      "remainingKm": 427,
+      "headingError": 32,
+      "curated": true,
+      "local": true
+    },
+    {
+      "callsign": "KAL791",
+      "destination": "Fukuoka",
+      "airport": "FUK",
+      "eligible": true,
+      "remainingKm": 260,
+      "headingError": 26,
+      "curated": false,
+      "local": false
+    }
+  ],
+  "rows": [
+    {
+      "name": "local-arrival-300km-vs-overflight-0",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "short-approach-vs-regional-outbound-0",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-only-reject-even-300km-remaining-0",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "short-only-nonlocal-reject-0",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "actual-displayed-heading-preference-0",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "tokyo-haneda-narita-alias-excluded-0",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "sparse-island-regional-is-playable-0",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "contradictory-route-never-overridden-0",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-arrival-300km-vs-overflight-1",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "short-approach-vs-regional-outbound-1",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-only-reject-even-300km-remaining-1",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "short-only-nonlocal-reject-1",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "actual-displayed-heading-preference-1",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "tokyo-haneda-narita-alias-excluded-1",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "sparse-island-regional-is-playable-1",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "contradictory-route-never-overridden-1",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-arrival-300km-vs-overflight-2",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "short-approach-vs-regional-outbound-2",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-only-reject-even-300km-remaining-2",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "short-only-nonlocal-reject-2",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "actual-displayed-heading-preference-2",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "tokyo-haneda-narita-alias-excluded-2",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "sparse-island-regional-is-playable-2",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "contradictory-route-never-overridden-2",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-arrival-300km-vs-overflight-3",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "short-approach-vs-regional-outbound-3",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-only-reject-even-300km-remaining-3",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "short-only-nonlocal-reject-3",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "actual-displayed-heading-preference-3",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "tokyo-haneda-narita-alias-excluded-3",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "sparse-island-regional-is-playable-3",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "contradictory-route-never-overridden-3",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-arrival-300km-vs-overflight-4",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "short-approach-vs-regional-outbound-4",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-only-reject-even-300km-remaining-4",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "short-only-nonlocal-reject-4",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "actual-displayed-heading-preference-4",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "tokyo-haneda-narita-alias-excluded-4",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "sparse-island-regional-is-playable-4",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "contradictory-route-never-overridden-4",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-arrival-300km-vs-overflight-5",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "short-approach-vs-regional-outbound-5",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "local-only-reject-even-300km-remaining-5",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "short-only-nonlocal-reject-5",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    },
+    {
+      "name": "actual-displayed-heading-preference-5",
+      "status": "pass",
+      "selected": "RJTT"
+    },
+    {
+      "name": "tokyo-haneda-narita-alias-excluded-5",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "sparse-island-regional-is-playable-5",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "contradictory-route-never-overridden-5",
+      "status": "pass",
+      "selected": "RKPC"
+    },
+    {
+      "name": "twelve-requests-no-local-fallback",
+      "status": "pass",
+      "error": "no-interesting-flight"
+    }
+  ]
+}

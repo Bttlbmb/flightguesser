@@ -1,0 +1,32 @@
+{
+  "_airport_codes_iata": "ICN-KIJ",
+  "_airports": [
+    {
+      "alt_feet": 23.0,
+      "alt_meters": 7.01,
+      "countryiso2": "KR",
+      "iata": "ICN",
+      "icao": "RKSI",
+      "lat": 37.469101,
+      "location": "Seoul",
+      "lon": 126.450996,
+      "name": "Incheon International Airport"
+    },
+    {
+      "alt_feet": 29.0,
+      "alt_meters": 8.84,
+      "countryiso2": "JP",
+      "iata": "KIJ",
+      "icao": "RJSN",
+      "lat": 37.955898,
+      "location": "Niigata",
+      "lon": 139.121002,
+      "name": "Niigata Airport"
+    }
+  ],
+  "airline_code": "KAL",
+  "airport_codes": "RKSI-RJSN",
+  "callsign": "KAL2197",
+  "number": "2197",
+  "plausible": true
+}

@@ -1,0 +1,96 @@
+Flightguesser assessment from 100 agent rounds
+
+The tested game was easy for knowledgeable agents, highly repetitive in shipped practice, and occasionally awkward because city-picker identities differ from familiar served-city names. It supported deduction; the observed wins do not justify calling it mainly a lottery. The overall win rate is strongly inflated by practice memory and a favorable small fixture set.
+
+Scope and method
+
+Five independent agent sessions played 20 rounds each: ten shipped practice rounds followed by ten labeled synthetic fixtures. Each agent made sequential decisions from currently visible clues, ordinary search results and its own completed-round memory. No agent could read source, city coordinates, hidden answers, other sessions or external flight sites. The adapter imported the current game and city search without changing them. The agents represent strategy roles, not measured human populations.
+
+The 100 scored rounds split into 50 recorded-practice plays and 50 simulated-flight plays. The practice rotation visits three recordings with three answers. Seven replay rounds per player repeat those same openings. The ten fixtures cover Tokyo, Dubai, Portland Oregon, Balice for Krakow airport, Funchal, Manila Pasay, Spata-Artemida for Athens airport, Melbourne without airline metadata, a short Paris arrival and Vancouver on a long great-circle route. These are fabricated observations for current-rule testing, not verified flights or schedules. In total there are 13 distinct destination answers.
+
+Observed results
+
+Player | practice wins | fixture wins | mean fixture attempts | paid reveals in all 20
+Casual city knowledge | 10/10 | 9/10 | 2.80 | 4
+Geography enthusiast | 10/10 | 10/10 | 1.90 | 0
+Aviation enthusiast | 10/10 | 10/10 | 2.30 | 6
+Cautious clue first | 10/10 | 10/10 | 4.00 | 37
+Competitive puzzle solver | 10/10 | 10/10 | 2.00 | 0
+
+All scored rounds: 99/100 wins, 2.06 attempts per round.
+Recorded practice: 50/50 wins. Simulated fixtures: 49/50 wins.
+Fresh answer exposures, excluding the 35 practice replays: 64/65 wins; 2.63 attempts per round.
+Practice replays: 35/35 wins; 35 explicit first-slot memory wins.
+Attempt means count both paid reveals and city submissions, and include six-slot losses. They do not measure human time.
+
+Difficulty and luck
+
+The geography and competitive roles solved most fresh fixtures quickly. This is evidence of a low challenge ceiling for these agents on this set. The cautious role spent more slots buying certainty; comparing its attempts with a guess-first role demonstrates strategic cost in these sessions, not a causal human experiment.
+
+Initial direction supports several plausible cities and some immediate wins were educated gambles. The strongest example of skill is the recurring ability to use one distance-and-direction result to name the next city: 258 km north of Tokyo suggested Niigata; 208 km south of Seattle suggested Portland; roughly 1,460 km southwest of Madrid suggested Funchal. Airline knowledge sometimes helped, but Alaska suggested the wrong Seattle hub and LOT suggested the wrong Warsaw hub. It is a useful prior rather than an answer.
+
+The first-miss precision analysis found a single matching bundled city object in 41 of 44 examined first misses. The median exact candidate count was 1; with a 50 km tolerance the median was 6 candidates with a 50 km distance tolerance. This used the whole 8428-city coordinate index. It demonstrates how much information the integer-km clue carries and how easily an automated solver could narrow it, not what an ordinary person can do mentally.
+
+The casual player lost the Portland fixture. Its final reason correctly identified the Pacific Northwest Portland, but the default first result selected Portland Maine. Replaying exactly the same preceding actions and changing only that final selected city wins on slot six. The original recorded loss remains a loss. This was selection friction, not failed destination deduction.
+
+Repetition
+
+Four recordings are bundled, but two answer Seoul. With the current deterministic rotation and adjacent-repeat exclusion, all five sessions cycled Niigata, Jeju City and Seoul. The later Seoul recording was continually skipped. All 35 replay openings were recognized and solved in one slot. Avoiding only the immediately previous answer does not preserve challenge once this pool is learned.
+
+City names and the picker
+
+Krakow search successfully finds Balice through the airport name, and Athens search finds Spata-Artemida. The game nevertheless displays and initials those municipalities, B and S, rather than the expected familiar cities K and A. Manila becomes Manila Pasay. This raises the value of airport and picker knowledge relative to ordinary city geography.
+
+Portland Maine appears before Oregon; a small US Manila appears before Philippine Manila; two US Athens options precede the Greek airport municipality. Region, country and airport labels are available, so careful selection works. The adapter defaulting to the first displayed choice exaggerates the risk compared with attentive UI selection. These findings establish ranking and naming friction, not a broken scoring rule.
+
+Clue progression and choices
+
+Only the first wrong city gets geographic feedback. Later wrong cities reveal the next flight fact without a fresh distance or direction. This makes the first guess strategically important, but later guesses cannot refine a geographic hypothesis in the same way. For strong agents the first clue solved the round before airline, remaining distance, country or initial became relevant. For a struggling player the country normally arrives after four misses and the initial after five, leaving two and one city slots respectively.
+
+After a first city miss, a paid reveal and a further nonterminal wrong city guess have the same slot cost and reveal the same next fact. A city guess also offers a chance to win and excludes an answer. Paying then has little strategic advantage. Before the first city, paid clues can reach airline, distance and country sooner because the reference-city clue has not been inserted; the cautious strategy therefore has a real early information tradeoff.
+
+Near-arrival cases can be very easy once the remaining-distance fact appears, while initially misleading headings can send guesses away from the named starting city. The game already prefers at least 250 km remaining for live selection; the short Paris fixture deliberately tests its fallback boundary. Removing an optional airline also moves country and initial earlier, so missing metadata does not consistently make a round harder.
+
+Recommended priorities
+
+1. Expand the dated real practice corpus to dozens of destination cities and avoid answers across a longer recent history. This addresses the strongest observed problem before changing the guess budget. The pool-size suggestion is a design target, not a tested optimum.
+2. Add sourced served-city mappings for common gaps such as Krakow and Athens, retaining municipalities as explicit alternatives. Derive initials from accepted familiar cities. Improve homonym ranking and make chosen region/country prominent; use only query intent and already revealed facts for context, never the hidden answer.
+3. Give later turns a meaningful choice, for example which flight clue to unlock. Consider a separate score or assistance cost for manual reveals, or another benefit that makes them worth their slot after a miss. Preserve the deliberate fixed-reference rule unless a later redesign changes it.
+4. Keep a forgiving normal mode while testing a separate harder mode with coarser distance bands or less decisive early clues. Simply cutting guesses would mostly penalize unfamiliar names and cautious players. These alternatives were not implemented or empirically compared here.
+5. Validate the revised flow with real novice and experienced people and a fresh, geographically broad route sample. Record replay familiarity separately from fresh solves, and count picker mistakes separately from deduction failures.
+
+Fresh scenario breakdown
+
+Round | answer | wins out of 5 | mean attempts | attempts by player in casual geography aviation cautious analytical order
+1 | Niigata | 5/5 | 3.60 | 6 2 2 6 2
+2 | Jeju City | 5/5 | 2.40 | 2 2 2 4 2
+3 | Seoul | 5/5 | 2.20 | 2 2 2 3 2
+11 | Tokyo | 5/5 | 1.60 | 1 1 1 4 1
+12 | Dubai | 5/5 | 2.00 | 2 2 2 2 2
+13 | Portland, Oregon | 4/5 | 4.00 | 6 3 3 5 3
+14 | Balice | 5/5 | 4.00 | 4 2 6 5 3
+15 | Funchal | 5/5 | 3.40 | 5 2 3 5 2
+16 | Manila (Pasay) | 5/5 | 2.40 | 2 2 1 5 2
+17 | Spata-Artemida | 5/5 | 2.40 | 2 2 2 4 2
+18 | Melbourne | 5/5 | 1.40 | 1 1 1 3 1
+19 | Paris | 5/5 | 2.20 | 2 2 2 3 2
+20 | Vancouver | 5/5 | 2.60 | 3 2 2 4 2
+
+Verification and evidence
+
+All 100 logs were replayed against current core functions; 206 accepted actions and 312 playing-state snapshots passed the state/privacy checks. All 101 existing offline tests passed. The source/data hashes match their pretest values. A separate current-browser practice round verified the first miss, unchanged reference clue on later misses, paid reveals, final-country/initial timing, sixth-slot win and preserved history. That QA round is not part of the 100.
+
+Files: rounds.json preserves every accepted decision and visible before/after state; summary.json contains computed metrics, precision and picker diagnostics, a selection-error counterfactual, source verification and limitations; harness.mjs and analyze.mjs reproduce the local setup and analysis.
+
+Limits
+
+1. Independent LLM roles share the same underlying model and general knowledge; persona constraints do not establish human novice or expert performance.
+2. 100 completed rounds include repeated practice observations and the same ten handcrafted fixtures across players, rather than 100 independent or unique routes.
+3. 50 shipped practice rounds and 50 synthetic rule-test rounds. No current live-provider destination, geographic distribution or availability was measured.
+4. Players used a text-only adapter importing current rules/search unchanged. They did not visually interpret the globe or use mouse/touch controls.
+5. The query convenience action selects a displayed picker choice, defaulting to choice 0; actual UI requires explicit selection. First-row homonym mistakes may be amplified by this adapter. Country, region and airport labels remain visible and correct.
+6. Ten controlled fixtures are small, deliberately selected cases with nine airline names and familiar destination regions; they cannot estimate worldwide or human win rates.
+7. Exact coordinate candidate enumeration is an analysis tool only, unavailable to the blind agents. One city object is not necessarily one physically distinct municipality.
+8. Decision reasons, source labels and confidence values are self-reports, not causal experiments or calibrated probabilities. The analytical agent corrected its first source annotation from heading plus initial to heading only; the saved state proves no initial was visible and the original annotation remains in the log.
+
+The game source was not changed. The findings concern this local version and these agent strategies; reliable live play, broader route difficulty, actual human enjoyment, phone controls and screen-reader behavior were not established.

@@ -1,0 +1,147 @@
+{
+  "startedAt": "2026-10-03T01:49:09.961Z",
+  "requestCount": 18,
+  "stoppedOnRateLimit": true,
+  "nearby": [
+    {
+      "city": "seoul",
+      "radiusNm": 50,
+      "status": 200,
+      "total": 47,
+      "eligible": 27
+    },
+    {
+      "city": "seoul",
+      "radiusNm": 150,
+      "status": 200,
+      "total": 86,
+      "eligible": 64
+    },
+    {
+      "city": "london",
+      "radiusNm": 50,
+      "status": 200,
+      "total": 13,
+      "eligible": 3
+    },
+    {
+      "city": "london",
+      "radiusNm": 150,
+      "status": 200,
+      "total": 32,
+      "eligible": 14
+    },
+    {
+      "city": "new-york",
+      "radiusNm": 50,
+      "status": 200,
+      "total": 120,
+      "eligible": 51
+    },
+    {
+      "city": "new-york",
+      "radiusNm": 150,
+      "status": 429,
+      "total": null,
+      "eligible": null
+    }
+  ],
+  "routes": [
+    {
+      "city": "seoul",
+      "callsign": "ESR272",
+      "status": 200,
+      "routeCodes": "RKPC-RKSS",
+      "airportCount": 2,
+      "acceptedByApplication": true
+    },
+    {
+      "city": "seoul",
+      "callsign": "ASV724",
+      "status": 500,
+      "routeCodes": null,
+      "airportCount": null,
+      "acceptedByApplication": false
+    },
+    {
+      "city": "seoul",
+      "callsign": "KAL744",
+      "status": 500,
+      "routeCodes": null,
+      "airportCount": null,
+      "acceptedByApplication": false
+    },
+    {
+      "city": "seoul",
+      "callsign": "APJ714",
+      "status": 500,
+      "routeCodes": null,
+      "airportCount": null,
+      "acceptedByApplication": false
+    },
+    {
+      "city": "seoul",
+      "callsign": "ANA861",
+      "status": 200,
+      "routeCodes": "RJTT-RKSS",
+      "airportCount": 2,
+      "acceptedByApplication": false
+    },
+    {
+      "city": "seoul",
+      "callsign": "CCA184",
+      "status": 200,
+      "routeCodes": "RJTT-ZBAA",
+      "airportCount": 2,
+      "acceptedByApplication": true
+    },
+    {
+      "city": "london",
+      "callsign": "EZY96BE",
+      "status": 500,
+      "routeCodes": null,
+      "airportCount": null,
+      "acceptedByApplication": false
+    },
+    {
+      "city": "london",
+      "callsign": "EZY59NW",
+      "status": 200,
+      "routeCodes": "GCTS-EGKK",
+      "airportCount": 2,
+      "acceptedByApplication": true
+    },
+    {
+      "city": "london",
+      "callsign": "WUK7383",
+      "status": 500,
+      "routeCodes": null,
+      "airportCount": null,
+      "acceptedByApplication": false
+    },
+    {
+      "city": "london",
+      "callsign": "BOX617",
+      "status": 500,
+      "routeCodes": null,
+      "airportCount": null,
+      "acceptedByApplication": false
+    },
+    {
+      "city": "london",
+      "callsign": "DLH417",
+      "status": 500,
+      "routeCodes": null,
+      "airportCount": null,
+      "acceptedByApplication": false
+    },
+    {
+      "city": "london",
+      "callsign": "TOM907P",
+      "status": 200,
+      "routeCodes": "unknown",
+      "airportCount": 0,
+      "acceptedByApplication": false
+    }
+  ]
+}

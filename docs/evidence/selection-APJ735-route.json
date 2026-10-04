@@ -1,0 +1,32 @@
+{
+  "_airport_codes_iata": "KIX-GMP",
+  "_airports": [
+    {
+      "alt_feet": 26.0,
+      "alt_meters": 7.92,
+      "countryiso2": "JP",
+      "iata": "KIX",
+      "icao": "RJBB",
+      "lat": 34.427299,
+      "location": "Osaka",
+      "lon": 135.244003,
+      "name": "Kansai International Airport"
+    },
+    {
+      "alt_feet": 58.0,
+      "alt_meters": 17.68,
+      "countryiso2": "KR",
+      "iata": "GMP",
+      "icao": "RKSS",
+      "lat": 37.5583,
+      "location": "Seoul",
+      "lon": 126.791,
+      "name": "Gimpo International Airport"
+    }
+  ],
+  "airline_code": "APJ",
+  "airport_codes": "RJBB-RKSS",
+  "callsign": "APJ735",
+  "number": "735",
+  "plausible": true
+}

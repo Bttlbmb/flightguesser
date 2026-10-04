@@ -1,0 +1,65 @@
+{
+  "testedAt": "2026-10-03T01:01:51.598Z",
+  "origin": "http://127.0.0.1:5199",
+  "results": [
+    {
+      "provider": "adsb.lol",
+      "url": "https://api.adsb.lol/v2/point/37.56/126.97/50",
+      "error": "Failed to fetch"
+    },
+    {
+      "provider": "adsbdb",
+      "url": "https://api.adsbdb.com/v0/callsign/KAL170",
+      "status": 200,
+      "keys": [
+        "response"
+      ],
+      "count": null
+    },
+    {
+      "provider": "airplanes.live",
+      "url": "https://api.airplanes.live/v2/point/37.56/126.97/50",
+      "error": "Failed to fetch"
+    },
+    {
+      "provider": "OpenSky",
+      "url": "https://opensky-network.org/api/states/all?lamin=37&lomin=126&lamax=38&lomax=128",
+      "error": "Failed to fetch"
+    },
+    {
+      "provider": "adsb.one",
+      "url": "https://api.adsb.one/v2/point/37.56/126.97/50",
+      "error": "Failed to fetch"
+    },
+    {
+      "provider": "adsb.fi",
+      "url": "https://opendata.adsb.fi/api/v2/lat/37.56/lon/126.97/dist/50",
+      "error": "Failed to fetch"
+    },
+    {
+      "provider": "adsb.im",
+      "url": "https://api.adsb.im/v2/point/37.56/126.97/50",
+      "error": "Failed to fetch"
+    },
+    {
+      "provider": "adsb.lol route GET",
+      "url": "https://api.adsb.lol/api/0/route/KAL170/37.56/126.97",
+      "error": "Failed to fetch"
+    }
+  ],
+  "browserConsole": [
+    "Access to fetch at 'https://api.adsb.lol/v2/point/37.56/126.97/50' from origin 'http://127.0.0.1:5199' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED",
+    "Access to fetch at 'https://api.airplanes.live/v2/point/37.56/126.97/50' from origin 'http://127.0.0.1:5199' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED",
+    "Access to fetch at 'https://opensky-network.org/api/states/all?lamin=37&lomin=126&lamax=38&lomax=128' from origin 'http://127.0.0.1:5199' has been blocked by CORS policy: The 'Access-Control-Allow-Origin' header has a value 'https://opensky-network.org' that is not equal to the supplied origin. Have the server send the header with a valid value.",
+    "Failed to load resource: net::ERR_FAILED",
+    "Access to fetch at 'https://api.adsb.one/v2/point/37.56/126.97/50' from origin 'http://127.0.0.1:5199' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED",
+    "Access to fetch at 'https://opendata.adsb.fi/api/v2/lat/37.56/lon/126.97/dist/50' from origin 'http://127.0.0.1:5199' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_CERT_COMMON_NAME_INVALID",
+    "Access to fetch at 'https://api.adsb.lol/api/0/route/KAL170/37.56/126.97' from origin 'http://127.0.0.1:5199' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED"
+  ]
+}

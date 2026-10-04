@@ -1,0 +1,7 @@
+{
+  "public/api.js": "ae217f7dc4f2fe139916b50c1bfdd079132a9683cc509189a761b48472ed6648",
+  "public/selection.js": "4c29bd2be26997f85353b8295073baf65218fa3ff27d9469c7fd109c0bc0182a",
+  "public/flights.js": "7cb99237ac59f2ec7c24984e1f1040688d1d58725fb420ae04eb562991088df7",
+  "public/destinations.js": "b66a212177ffccbbd036067fffb1bb2e5831efbe90ca5aff7cb382a5ef6628af",
+  "public/data/airports.json": "6f1dedb4ed7a5871f3cf21f56af31e1da7e5a697f73cae184209da51f42c3f95"
+}

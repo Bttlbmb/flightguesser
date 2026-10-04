@@ -1,0 +1,45 @@
+Flightguesser availability across four other locations — 4 October 2026
+
+Alice Springs supplied 0 observed aircraft at the full 250 nautical mile radius and 0 in the recheck 215.07 minutes later. Every full-empty-sky replay correctly returned no-flight. This is a concrete availability problem for live play at these observed times, independent of the interest filters.
+London had 404 qualifying aircraft and 7 different playable destinations in twelve sampled routes. Aircraft scarcity was not a problem in this sample.
+Reykjavík had 11 qualifying aircraft, all sampled, yielding 6 playable flights and 5 destinations. All 50 replay attempts succeeded, but widening beyond the first radius was essential. Transatlantic overflights provided useful puzzles.
+Sydney had 48 qualifying aircraft but only 3 playable flights to 2 destinations in twelve route samples. 5 valid routes returned to Sydney and were rejected. The sampled pool gave 18/20 fresh searches and 13/30 session rounds. The unsampled aircraft could improve this; these rates cannot estimate live success across the full sky.
+For the product: keep widening the search and the recorded-flight recovery. Sparse data can leave no live puzzle; a busy sky can also yield few useful routes under the interest and request limits. Do not restore local arrivals as a fallback solely to conceal empty searches.
+
+Twenty fresh seeded searches and ten three-round sessions per location (200 offline attempts). Replays use original observation clocks and only the sampled aircraft. Every primary route lookup is modeled unavailable; captured explicit fallback data are used. Replay availability is conditional on this sample, not a measured live full-sky search success rate. Empty snapshots include the full observed sky.
+
+Location | observed aircraft at 250 nm | qualifying aircraft | sampled/usable/playable flights | distinct playable destinations | route census complete
+London | 715 | 404 | 12/10/7 | Manchester, Vienna, Boston, Barcelona, Zurich, Lisbon, Copenhagen | false
+Sydney | 75 | 48 | 12/8/3 | Brisbane, Griffith | false
+Reykjavík area | 14 | 11 | 11/9/6 | Arnavutköy, Istanbul, Amsterdam, Chicago, Barcelona, New York | true
+Alice Springs area | 0 | 0 | 0/0/0 | none | true
+
+Search radius (qualifying aircraft at 50 / 100 / 250 nautical miles)
+London: 55 / 98 / 404
+Sydney: 10 / 17 / 48
+Reykjavík area: 2 / 4 / 11
+Alice Springs area: 0 / 0 / 0
+
+Conditional recorded selection replay
+Location | fresh playable/attempts | session playable/attempts | error counts
+London | 20/20 | 30/30 | {}
+Sydney | 18/20 | 13/30 | {"no-interesting-flight":17}
+Reykjavík area | 20/20 | 30/30 | {}
+Alice Springs area | 0/20 | 0/30 | {"no-flight":30}
+
+Filtering and service observations
+London: {"local":1,"short":3,"approaching":0} (overlapping rejection counts); primary probe 200; observation 2026-10-04T08:55:45.501Z; later check not sampled.
+Sydney: {"local":5,"short":4,"approaching":0} (overlapping rejection counts); primary probe 500; observation 2026-10-04T08:55:52.000Z; later check not sampled.
+Reykjavík area: {"local":2,"short":3,"approaching":0} (overlapping rejection counts); primary probe 200; observation 2026-10-04T08:55:57.501Z; later check {"recordedAt":1791117067500,"minutesAfterFirst":215.17,"raw":13,"eligible":10}.
+Alice Springs area: {"local":0,"short":0,"approaching":0} (overlapping rejection counts); primary probe not needed; observation 2026-10-04T08:56:02.500Z; later check {"recordedAt":1791117066500,"minutesAfterFirst":215.07,"raw":0,"eligible":0}.
+
+Limits
+- Provider absence cannot distinguish actual absence of planes from receiver/reporting coverage. Raw counts describe observations from this provider.
+- One instant per location, plus any explicitly reported sparse-region recheck, cannot establish coverage throughout a day. London was sampled in the morning; Sydney/Alice Springs in the evening; Reykjavík in the morning.
+- At most twelve stratified aircraft were enriched per location. London/Sydney route pools are incomplete, so failures in their sampled replays cannot establish full-sky scarcity. A complete Reykjavík sample can establish scarcity for that observed subset.
+- Original recorded timestamps are frozen only in labeled offline replays. No observation was refreshed to appear live. Primary outage, missing sampled routes, route geometry and the twelve-request budget can affect replay availability separately from plane counts.
+- Service HTTP failures, missing reported routes, local/near-arrival filtering and true empty observations are recorded separately. Reported routes remain database associations, not confirmed flight plans.
+- No production selection behavior was changed.
+
+Captured 44 bounded requests (42 initial requests and 2 sparse-region rechecks); stop reason completed sample. Source hashes unchanged. All replays are offline.
+Evidence: samples.json; captures/; results.json; source-hashes.json; capture.mjs; analyze.mjs.

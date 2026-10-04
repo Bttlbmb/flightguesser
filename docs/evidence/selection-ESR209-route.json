@@ -1,0 +1,32 @@
+{
+  "_airport_codes_iata": "GMP-CJU",
+  "_airports": [
+    {
+      "alt_feet": 58.0,
+      "alt_meters": 17.68,
+      "countryiso2": "KR",
+      "iata": "GMP",
+      "icao": "RKSS",
+      "lat": 37.5583,
+      "location": "Seoul",
+      "lon": 126.791,
+      "name": "Gimpo International Airport"
+    },
+    {
+      "alt_feet": 118.0,
+      "alt_meters": 35.97,
+      "countryiso2": "KR",
+      "iata": "CJU",
+      "icao": "RKPC",
+      "lat": 33.511299,
+      "location": "Jeju City",
+      "lon": 126.492996,
+      "name": "Jeju International Airport"
+    }
+  ],
+  "airline_code": "ESR",
+  "airport_codes": "RKSS-RKPC",
+  "callsign": "ESR209",
+  "number": "209",
+  "plausible": true
+}
