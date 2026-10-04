@@ -77,3 +77,13 @@ test('a browser search opens a live round through hosted telemetry and fallback 
   assert.equal(round.route.destination.id, 'BBBB');
   assert.ok(paths.some(url => url.includes('api.adsbdb.com/v0/callsign/ABC123')));
 });
+
+
+test('hosted relay works when the runtime supplies no incoming Request.signal', async () => {
+  const worker = createHostedHandler({ fetcher: async (_url, options) => {
+    assert.ok(options.signal instanceof AbortSignal);
+    return json({ ac: [] });
+  } });
+  const response = await worker.fetch({ url: origin + '/api/nearby/0/0/50', method: 'GET', headers: new Headers() });
+  assert.equal(response.status, 200);
+});

@@ -88,9 +88,16 @@ export function createHostedHandler({ assets = {}, fetcher = fetch, now = Date.n
       if (recent.length >= 40 || inFlight >= 3) return json(429, { error: 'Please wait before searching again' }, { 'Retry-After': '30' });
       recent.push(timestamp);
       inFlight++;
+      // Incoming Request.signal is optional in the hosted Worker runtime.
+      const timeout = new AbortController();
+      const timer = setTimeout(() => timeout.abort(), 10000);
+      const incoming = request.signal;
+      const cancel = () => timeout.abort();
+      if (incoming?.aborted) cancel();
+      else incoming?.addEventListener?.('abort', cancel, { once: true });
       try {
         const response = await fetcher(upstream, {
-          signal: AbortSignal.any([request.signal, AbortSignal.timeout(10000)]),
+          signal: timeout.signal,
           redirect: 'error',
           headers: { Accept: 'application/json', 'User-Agent': 'Flightguesser/0.1 (+https://flightguesser.cocoa-robin-0598.chatgpt.site)' },
         });
@@ -99,7 +106,10 @@ export function createHostedHandler({ assets = {}, fetcher = fetch, now = Date.n
           pauseUntil = Math.max(pauseUntil, now() + seconds * 1000);
           return json(429, { error: 'Flight data service needs a pause' }, { 'Retry-After': String(seconds) });
         }
-        if (!response.ok) return json(502, { error: 'Live flight data is unavailable' });
+        if (!response.ok) {
+          console.warn('Flight provider response', new URL(upstream).hostname, response.status);
+          return json(502, { error: 'Live flight data is unavailable' });
+        }
         const entry = await readJson(response);
         // Bound cached bytes across nearby snapshots, not just the number of entries.
         if (cache.has(upstream)) drop(upstream);
@@ -107,9 +117,14 @@ export function createHostedHandler({ assets = {}, fetcher = fetch, now = Date.n
         cache.set(upstream, { ...entry, at: now() });
         bytes += entry.size;
         return json(200, entry.text);
-      } catch {
+      } catch (error) {
+        console.warn('Flight relay failure', error.name);
         return json(502, { error: 'Live flight data is unavailable' });
-      } finally { inFlight--; }
+      } finally {
+        clearTimeout(timer);
+        incoming?.removeEventListener?.('abort', cancel);
+        inFlight--;
+      }
     },
   };
 }
