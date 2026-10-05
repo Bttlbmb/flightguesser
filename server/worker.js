@@ -64,7 +64,7 @@ function waitForSlot(delay, signal) {
   });
 }
 
-export function createHostedHandler({ assets = {}, fetcher = (url, options) => globalThis.fetch(url, options), now = Date.now, nearbyIntervalMs = 1000, allowedOrigin = null, telemetryProvider = 'adsb.fi' } = {}) {
+export function createHostedHandler({ assets = {}, fetcher = (url, options) => globalThis.fetch(url, options), now = Date.now, nearbyIntervalMs = 1000, allowedOrigin = null, telemetryProvider = 'adsb.fi', userAgent = 'Flightguesser/0.1 (+https://flightguesser.cocoa-robin-0598.chatgpt.site)' } = {}) {
   if (!['adsb.fi', 'adsb.lol'].includes(telemetryProvider)) throw new TypeError('Unsupported aircraft provider');
   const cache = new Map();
   const recent = [];
@@ -127,7 +127,7 @@ export function createHostedHandler({ assets = {}, fetcher = (url, options) => g
         const response = await fetcher(upstream, {
           signal: timeout.signal,
           redirect: 'manual',
-          headers: { Accept: 'application/json', 'User-Agent': 'Flightguesser/0.1 (+https://bttlbmb.github.io/flightguesser/)' },
+          headers: { Accept: 'application/json', 'User-Agent': userAgent },
         });
         if (response.status === 429) {
           const seconds = retrySeconds(response.headers.get('retry-after'));

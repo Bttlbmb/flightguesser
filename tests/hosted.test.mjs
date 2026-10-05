@@ -96,6 +96,7 @@ test('hosted provider redirects are rejected without following the new destinati
   let calls = 0;
   const worker = createHostedHandler({ fetcher: async (url, options) => {
     calls++;
+    assert.equal(options.headers['User-Agent'], 'Flightguesser/0.1 (+https://flightguesser.cocoa-robin-0598.chatgpt.site)');
     assert.ok(url.startsWith('https://opendata.adsb.fi/'));
     assert.equal(options.redirect, 'manual');
     return new Response('', { status: 302, headers: { Location: 'https://other.example' } });

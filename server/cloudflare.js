@@ -4,7 +4,8 @@ const websiteOrigin = 'https://bttlbmb.github.io';
 const telemetryProvider = 'adsb.lol';
 
 export function createCloudflareRelay(options = {}) {
-  const handler = createHostedHandler({ ...options, allowedOrigin: websiteOrigin, telemetryProvider });
+  const handler = createHostedHandler({ ...options, allowedOrigin: websiteOrigin, telemetryProvider,
+    userAgent: 'Flightguesser/0.1 (+' + websiteOrigin + '/flightguesser/)' });
   return {
     async fetch(request) {
       const url = new URL(request.url);

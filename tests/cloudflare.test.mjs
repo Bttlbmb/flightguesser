@@ -27,7 +27,8 @@ test('GitHub browser configuration and a complete flight search use the external
   const paths = [];
   const airport = (icao, lon) => ({ icao_code: icao, iata_code: icao.slice(1), name: icao + ' Airport', municipality: icao,
     country_iso_name: 'GB', latitude: 0, longitude: lon });
-  const worker = createCloudflareRelay({ nearbyIntervalMs: 0, fetcher: async url => {
+  const worker = createCloudflareRelay({ nearbyIntervalMs: 0, fetcher: async (url, options) => {
+    assert.equal(options.headers['User-Agent'], 'Flightguesser/0.1 (+https://bttlbmb.github.io/flightguesser/)');
     paths.push(url);
     if (url.includes('/v2/point/')) return json({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'ABC123',
       lat: 0, lon: 5, alt_baro: 34000, gs: 420, track: 90, seen: 1, seen_pos: 2 }] });
