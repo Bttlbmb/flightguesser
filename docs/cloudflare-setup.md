@@ -13,6 +13,12 @@ Opening that address should show a short response identifying the Flightguesser 
 
 The earlier Worker used adsb.fi. On 5 October 2026, the deployed Worker received HTTP 403 from that provider while requests from the maintainer’s computer succeeded. The standalone Cloudflare version therefore uses adsb.lol; verify an actual nearby request after redeploying before enabling the website connection. This change does not establish why adsb.fi rejected the request or guarantee that a different provider is reachable from Cloudflare.
 
+### Current deployment verification
+
+The Worker at `https://flightguesser-relay.hey-bf4.workers.dev` correctly reports adsb.lol positions and adsbdb routes. On 5 October 2026, nearby requests still returned provider HTTP 429 after waiting more than a minute. A separate Cloudflare Playground Worker reproduced the same nginx 429 response, with no upstream `Retry-After` header. The relay supplies a 60-second fallback pause. The Playground also reproduced adsb.fi’s 403 firewall block page. Both providers returned successful aircraft responses from the maintainer’s computer during this investigation; route requests through the deployed relay succeeded.
+
+The website connection remains disabled. Resolve provider access from Cloudflare (for example, through the provider’s approved access process), or use a relay host whose provider requests succeed, before running the connection and publication steps. These observations do not prove that either restriction is permanent or identify the provider’s exact rule.
+
 The dashboard file is self-contained JavaScript. It needs no database, bindings, secrets or packages. If editing the source relay, run `npm run build:relay` to regenerate it. `server/worker.js` and `server/cloudflare.js` are the authoritative sources.
 
 For command-line deployment, the equivalent configuration is in `cloudflare/wrangler.jsonc`. After Cloudflare login, Wrangler can deploy that configuration directly. Dashboard deployment does not require installing Wrangler.
