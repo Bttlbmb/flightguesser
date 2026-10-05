@@ -199,7 +199,7 @@ async function startSearch(place) {
       },
     });
     if (token !== generation) return;
-    round.route = await enrichRouteAirline(round.route, { signal: searchController.signal, relay: config.relay });
+    round.route = await enrichRouteAirline(round.route, { signal: searchController.signal, relay: config.relay, relayUrl: config.relayUrl });
     if (token !== generation) return;
     await openRound(round, token);
     if (token === generation) playedAircraft.add(round.aircraft.hex);

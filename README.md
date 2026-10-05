@@ -68,13 +68,17 @@ This command tests the game, verifies the recordings, builds the static website,
 
 GitHub manages its own Pages publication internally and may display a built-in Pages run under Actions even when **Deploy from a branch** is selected. This project supplies no Actions workflow and does all testing and building locally. See [GitHub’s branch publishing instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
 
-Assets, imports, local data and runtime configuration use relative URLs so the site works under `/flightguesser/` and at a domain root. The static configuration in `public/config.json` disables the server relay.
+Assets, imports, local data and runtime configuration use relative URLs so the site works under `/flightguesser/` and at a domain root. The initial configuration in `public/config.json` disables the relay. Once a Cloudflare Worker is deployed, that file can enable its HTTPS address for live play.
 
 ### Live-data limitation
 
 GitHub Pages cannot run a live-data relay. On 5 October 2026, probes with the GitHub Pages origin found no browser-access permission header on either adsb.lol or adsb.fi position responses. Recorded practice works entirely from the bundled files and is available directly from the start screen. Live searches keep their existing error and recovery flow, but currently need a separately hosted relay or a provider that permits direct browser access. The static site does not contact the old OpenAI host.
 
-### Optional relay backup
+### Set up a Cloudflare relay
+
+Follow [the Cloudflare setup guide](docs/cloudflare-setup.md). The ready-to-paste [`cloudflare/worker.js`](cloudflare/worker.js) allows requests from the GitHub website and retains fixed provider paths, caching and request limits. Deploy it in the Cloudflare dashboard, then provide its public address to connect and verify the live game. No OpenAI account or custom GitHub Actions workflow is required.
+
+### Optional combined relay build
 
 The Worker relay code remains in the repository as a backup. It uses adsb.fi positions and adsbdb routes. Build and preview it locally with:
 

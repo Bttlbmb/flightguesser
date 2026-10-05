@@ -6,7 +6,17 @@ const MAX_SELECTED_POSITION_AGE_MS = 60000;
 let providerPauseUntil = 0;
 const airlineNames = new Map();
 
-export async function enrichRouteAirline(route, { signal, fetcher = fetch, timeoutMs = 1500, relay = false } = {}) {
+export function normalizeRelayUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) throw new Error('Provide the HTTPS address of your relay.');
+  const url = new URL(value.trim());
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/') {
+    throw new Error('Use the HTTPS relay address without a path, query or credentials.');
+  }
+  return url.origin;
+}
+const relayEndpoint = (path, relayUrl) => relayUrl ? new URL(path, normalizeRelayUrl(relayUrl)).href : path;
+
+export async function enrichRouteAirline(route, { signal, fetcher = fetch, timeoutMs = 1500, relay = false, relayUrl = '' } = {}) {
   if (signal?.aborted) throw new DOMException('Search cancelled', 'AbortError');
   const code = route?.airlineCode;
   if (!/^[A-Z]{3}$/.test(code ?? '') || !route.callsign?.startsWith(code) || normalizeAirline(route.airline, code, route.airline?.provider)) return route;
@@ -16,9 +26,9 @@ export async function enrichRouteAirline(route, { signal, fetcher = fetch, timeo
   // into a failed round, and no identity is guessed from a callsign prefix alone.
   const timeout = AbortSignal.timeout(timeoutMs);
   try {
-    const response = await fetcher(relay ? `/api/airline/${code}` : `https://api.adsbdb.com/v0/airline/${code}`, {
+    const response = await fetcher(relay ? relayEndpoint(`/api/airline/${code}`, relayUrl) : `https://api.adsbdb.com/v0/airline/${code}`, {
       signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-      credentials: relay ? 'same-origin' : 'omit', referrerPolicy: 'no-referrer',
+      credentials: relay && !relayUrl ? 'same-origin' : 'omit', referrerPolicy: 'no-referrer',
     });
     if (signal?.aborted) throw new DOMException('Search cancelled', 'AbortError');
     if (!response.ok) return route;
@@ -88,7 +98,9 @@ export async function runtimeConfig({ fetcher = fetch, timeoutMs = 1500 } = {}) 
     const response = await fetcher('./config.json', { credentials: 'same-origin', signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) return { relay: false };
     const config = await response.json();
+    const relayUrl = config.relay === true && config.relayUrl != null ? normalizeRelayUrl(config.relayUrl) : '';
     return { relay: config.relay === true,
+      ...(relayUrl ? { relayUrl } : {}),
       ...(config.telemetryProvider === 'adsb.fi' ? { telemetryProvider: 'adsb.fi' } : {}),
       ...(config.routeProvider === 'adsbdb' ? { routeProvider: 'adsbdb' } : {}),
     };
@@ -109,7 +121,7 @@ export async function findNearbyRound(place, options = {}) {
 }
 
 async function findWithinBudget(place, {
-  signal, callerSignal = null, relay = false, telemetryProvider = 'adsb.lol', routeProvider = 'adsb.lol', onProgress = () => {}, fetcher = fetch,
+  signal, callerSignal = null, relay = false, relayUrl = '', telemetryProvider = 'adsb.lol', routeProvider = 'adsb.lol', onProgress = () => {}, fetcher = fetch,
   excluded = new Set(), excludedDestinationIds = new Set(), resolveDestination = airport => airport,
   history = [], random = Math.random,
 } = {}) {
@@ -137,7 +149,8 @@ async function findWithinBudget(place, {
   const request = async (url, timeoutMs = 10000) => {
     const remaining = comparisonEndsAt - Date.now();
     if (remaining <= 0) throw new DataError('comparison-complete', 'The candidate comparison is complete.');
-    return requestJson(url, { signal, fetcher, timeoutMs: Math.max(1, Math.min(timeoutMs, remaining)) });
+    return requestJson(relay && url.startsWith('/api/') ? relayEndpoint(url, relayUrl) : url,
+      { signal, fetcher, timeoutMs: Math.max(1, Math.min(timeoutMs, remaining)) });
   };
   try {
     search: for (const radiusNm of SEARCH_RADII_NM) {
