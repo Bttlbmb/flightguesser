@@ -39,5 +39,14 @@ if (process.argv.includes('--hosted')) {
   const worker = await readFile(join(root, 'server/worker.js'), 'utf8');
   await mkdir(join(output, 'server'), { recursive: true });
   await writeFile(join(output, 'server/index.js'), worker + '\nexport default createHostedHandler({ assets: ' + JSON.stringify(hostedAssets) + ' });\n');
+  const hosting = await readFile(join(root, '.openai/hosting.json'), 'utf8').catch(error => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (hosting) {
+    JSON.parse(hosting);
+    await mkdir(join(output, '.openai'), { recursive: true });
+    await writeFile(join(output, '.openai/hosting.json'), hosting);
+  }
   console.log('Built hosted Worker with live data relay');
 }

@@ -78,16 +78,16 @@ GitHub Pages cannot run a live-data relay. On 5 October 2026, probes with the Gi
 
 Follow [the Cloudflare setup guide](docs/cloudflare-setup.md). The ready-to-paste [`cloudflare/worker.js`](cloudflare/worker.js) allows requests from the GitHub website and retains fixed provider paths, caching and request limits. Deploy it in the Cloudflare dashboard, then provide its public address to connect and verify the live game. No OpenAI account or custom GitHub Actions workflow is required.
 
-### Optional combined relay build
+### OpenAI-hosted game and relay
 
-The Worker relay code remains in the repository as a backup. It uses adsb.fi positions and adsbdb routes. Build and preview it locally with:
+The OpenAI Sites deployment serves the game and its built-in relay together. It uses adsb.fi positions and adsbdb routes. Build and preview it locally with:
 
 ```sh
 npm run build:hosted
 npm run preview:hosted -- --port=5187
 ```
 
-The preview runs the generated relay locally and can contact real providers. This build is separate from GitHub Pages and no longer includes an OpenAI hosting manifest. Follow the provider’s personal, non-commercial terms when deploying a relay elsewhere.
+The preview runs the generated relay locally and can contact real providers. The hosted build includes the existing Sites project manifest; the static GitHub Pages build remains independent and keeps its external relay disabled until a working connection is verified. GitHub retains the complete source backup. Provider access must be verified in the deployed environment.
 
 | Folder | Purpose |
 | --- | --- |

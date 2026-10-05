@@ -58,7 +58,7 @@ Optional browser tools load only when supported and call the same guarded action
 
 ## Serving and deployment
 
-The static build copies an explicit public-asset list and licence notices to `dist/`. The local `publish:pages` command tests and builds committed source, pushes its backup to `main`, and pushes only the built assets to `gh-pages`. GitHub Pages serves the root of `gh-pages` using branch publishing, without a custom Actions workflow. The generated site has no OpenAI hosting dependency. The optional relay build embeds the assets in a Worker for a separately configured server host.
+The static build copies an explicit public-asset list and licence notices to `dist/`. The local `publish:pages` command tests and builds committed source, pushes its backup to `main`, and pushes only the built assets to `gh-pages`. GitHub Pages serves the root of `gh-pages` using branch publishing, without a custom Actions workflow. The generated static site has no OpenAI hosting dependency. The hosted build embeds the assets in a Worker and copies the existing Sites manifest for the OpenAI deployment. It serves configuration with its built-in relay enabled, independently of the static configuration file.
 
 Runtime settings are read from the relative `./config.json` path. Static hosting initially serves `{ "relay": false }`; a configured Cloudflare relay adds `relay: true`, an HTTPS `relayUrl` origin and its provider settings. The local server and combined Worker provide same-origin relay settings at this path. Relative assets and data paths preserve the GitHub Pages `/flightguesser/` prefix. The legacy `/api/config` endpoint remains available in both relay implementations.
 
