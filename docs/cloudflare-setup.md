@@ -23,7 +23,7 @@ Send the public Worker address to the person maintaining the website. The mainta
 npm run connect:relay -- https://flightguesser-relay.your-subdomain.workers.dev
 ```
 
-The command verifies the Worker’s configuration and its browser permission for `https://bttlbmb.github.io`, then saves the address in `public/config.json`. Commit that change on `main`, then run `npm run publish:pages` to publish the game’s connection to `gh-pages`. The Pages setting remains **Deploy from a branch → gh-pages → /(root)**.
+The command verifies the Worker’s configuration, its browser permission for `https://bttlbmb.github.io`, and a live aircraft request near Seoul before saving the address in `public/config.json`. If aircraft data fails, check the Worker’s **Logs → Live** for a line beginning with `Flight provider response` or `Flight relay failure`. Commit the verified configuration on `main`, then run `npm run publish:pages` to publish the game’s connection to `gh-pages`. The Pages setting remains **Deploy from a branch → gh-pages → /(root)**.
 
 Verify a Seoul search from the published GitHub website. If providers are reachable but no usable route survives validation, the game should explain that result; it must never turn a recording into a live flight. Recorded practice works while the Worker is unavailable.
 

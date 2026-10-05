@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createCloudflareRelay } from '../server/cloudflare.js';
+import { verifyRelay } from '../scripts/connect-relay.mjs';
 import { findNearbyRound, enrichRouteAirline, runtimeConfig, normalizeRelayUrl } from '../public/api.js';
 
 const origin = 'https://bttlbmb.github.io';
@@ -10,6 +11,17 @@ const request = (path, options = {}) => new Request(relayUrl + path, {
   ...options, headers: { Origin: origin, 'Sec-Fetch-Site': 'cross-site', ...options.headers },
 });
 const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), { status, headers });
+
+test('connecting a relay requires real aircraft data as well as working configuration', async () => {
+  const cors = { 'Access-Control-Allow-Origin': origin };
+  const settings = { relay: true, telemetryProvider: 'adsb.fi', routeProvider: 'adsbdb' };
+  await assert.rejects(verifyRelay(relayUrl, async url => url.endsWith('/api/config')
+    ? json(settings, 200, cors) : json({ error: 'Unavailable' }, 502, cors)), /aircraft data failed.*502/);
+  await assert.rejects(verifyRelay(relayUrl, async url => url.endsWith('/api/config')
+    ? json(settings, 200, cors) : json({}, 200, cors)), /unexpected aircraft response/);
+  assert.deepEqual(await verifyRelay(relayUrl, async url => url.endsWith('/api/config')
+    ? json(settings, 200, cors) : json({ ac: [] }, 200, cors)), { ...settings, relayUrl });
+});
 
 test('GitHub browser configuration and a complete flight search use the external relay without cookies', async () => {
   const paths = [];
