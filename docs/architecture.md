@@ -6,7 +6,7 @@ The site uses local JavaScript, HTML, CSS and data. It makes no map-service, fon
 
 ## From a search to a round
 
-1. **Find observations.** Hosted play uses adsb.fi; local relay and direct-browser play use adsb.lol. Coordinates are rounded to two decimal places. The search expands through 50, 100 and 250 nautical miles, about 93, 185 and 463 km.
+1. **Find observations.** The standalone Cloudflare relay, local relay and direct-browser play use adsb.lol. The optional combined hosted build defaults to adsb.fi. Coordinates are rounded to two decimal places. The search expands through 50, 100 and 250 nautical miles, about 93, 185 and 463 km.
 2. **Validate the aircraft.** Require an airborne position, plausible speed and altitude, direction and a callsign in the airline format. Reject duplicate callsigns. The format is a filter; it does not prove that the aircraft carries passengers.
 3. **Match a route.** Hosted play uses adsbdb. Local play first tries adsb.lol, then adsbdb if the first source fails or has no airport list. Require the exact callsign and two distinct airports. Reject routes with stops, explicit contradictions and obvious conflicts with the aircraft’s position or movement.
 4. **Choose a puzzle.** Exclude destinations close to the starting place or arrival. Compare a small pool and prefer useful direction clues and variety. Resolve missing city labels from the bundled airport index without changing the reported coordinates.

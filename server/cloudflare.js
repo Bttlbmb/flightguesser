@@ -1,9 +1,10 @@
 import { createHostedHandler, upstreamForPath } from './worker.js';
 
 const websiteOrigin = 'https://bttlbmb.github.io';
+const telemetryProvider = 'adsb.lol';
 
 export function createCloudflareRelay(options = {}) {
-  const handler = createHostedHandler({ ...options, allowedOrigin: websiteOrigin });
+  const handler = createHostedHandler({ ...options, allowedOrigin: websiteOrigin, telemetryProvider });
   return {
     async fetch(request) {
       const url = new URL(request.url);
@@ -21,7 +22,8 @@ export function createCloudflareRelay(options = {}) {
       if (url.pathname === '/' && request.method === 'GET') return reply(200, {
         service: 'Flightguesser relay', website: websiteOrigin + '/flightguesser/',
       });
-      if (url.search || (url.pathname !== '/api/config' && !upstreamForPath(url.pathname))) {
+      if (url.search || url.pathname.startsWith('/api/route/')
+        || (url.pathname !== '/api/config' && !upstreamForPath(url.pathname, telemetryProvider))) {
         return reply(400, { error: 'Unsupported data request' });
       }
       if (request.method === 'OPTIONS') {

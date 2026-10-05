@@ -13,7 +13,7 @@ export async function verifyRelay(value, fetcher = fetch) {
     throw new Error('The relay did not allow the GitHub website. Deploy cloudflare/worker.js first.');
   }
   const settings = await response.json();
-  if (settings.relay !== true || settings.telemetryProvider !== 'adsb.fi' || settings.routeProvider !== 'adsbdb') {
+  if (settings.relay !== true || !['adsb.fi', 'adsb.lol'].includes(settings.telemetryProvider) || settings.routeProvider !== 'adsbdb') {
     throw new Error('Unexpected relay configuration. Deploy the prepared Flightguesser Worker.');
   }
   const nearby = await get('/api/nearby/37.57/126.98/50');

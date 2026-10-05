@@ -64,7 +64,8 @@ function waitForSlot(delay, signal) {
   });
 }
 
-export function createHostedHandler({ assets = {}, fetcher = (url, options) => globalThis.fetch(url, options), now = Date.now, nearbyIntervalMs = 1000, allowedOrigin = null } = {}) {
+export function createHostedHandler({ assets = {}, fetcher = (url, options) => globalThis.fetch(url, options), now = Date.now, nearbyIntervalMs = 1000, allowedOrigin = null, telemetryProvider = 'adsb.fi' } = {}) {
+  if (!['adsb.fi', 'adsb.lol'].includes(telemetryProvider)) throw new TypeError('Unsupported aircraft provider');
   const cache = new Map();
   const recent = [];
   let bytes = 0, inFlight = 0, pauseUntil = 0, nextNearbyAt = 0;
@@ -90,8 +91,9 @@ export function createHostedHandler({ assets = {}, fetcher = (url, options) => g
         return json(403, { error: 'Same-origin requests only' });
       }
       if (url.search) return json(400, { error: 'Unsupported data request' });
-      if (url.pathname === '/api/config') return json(200, { relay: true, telemetryProvider: 'adsb.fi', routeProvider: 'adsbdb' });
-      const upstream = upstreamForPath(url.pathname);
+      if (url.pathname === '/api/config') return json(200, { relay: true, telemetryProvider, routeProvider: 'adsbdb' });
+      // This handler uses adsbdb routes with either position provider.
+      const upstream = url.pathname.startsWith('/api/route/') ? null : upstreamForPath(url.pathname, telemetryProvider);
       if (!upstream) return json(400, { error: 'Unsupported data request' });
       const timestamp = now();
       if (pauseUntil > timestamp) return json(429, { error: 'Provider requests are paused' }, { 'Retry-After': String(Math.ceil((pauseUntil - timestamp) / 1000)) });
@@ -109,8 +111,8 @@ export function createHostedHandler({ assets = {}, fetcher = (url, options) => g
       if (incoming?.aborted) cancel();
       else incoming?.addEventListener?.('abort', cancel, { once: true });
       try {
-        // adsb.fi allows one request per second. Reserve slots before waiting.
-        if (upstream.startsWith('https://opendata.adsb.fi/')) {
+        // Keep position requests one second apart. Reserve slots before waiting.
+        if (url.pathname.startsWith('/api/nearby/')) {
           const startAt = Math.max(now(), nextNearbyAt);
           nextNearbyAt = startAt + nearbyIntervalMs;
           const delay = Math.max(0, startAt - now());

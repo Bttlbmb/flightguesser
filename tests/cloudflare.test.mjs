@@ -14,7 +14,7 @@ const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(d
 
 test('connecting a relay requires real aircraft data as well as working configuration', async () => {
   const cors = { 'Access-Control-Allow-Origin': origin };
-  const settings = { relay: true, telemetryProvider: 'adsb.fi', routeProvider: 'adsbdb' };
+  const settings = { relay: true, telemetryProvider: 'adsb.lol', routeProvider: 'adsbdb' };
   await assert.rejects(verifyRelay(relayUrl, async url => url.endsWith('/api/config')
     ? json(settings, 200, cors) : json({ error: 'Unavailable' }, 502, cors)), /aircraft data failed.*502/);
   await assert.rejects(verifyRelay(relayUrl, async url => url.endsWith('/api/config')
@@ -29,12 +29,13 @@ test('GitHub browser configuration and a complete flight search use the external
     country_iso_name: 'GB', latitude: 0, longitude: lon });
   const worker = createCloudflareRelay({ nearbyIntervalMs: 0, fetcher: async url => {
     paths.push(url);
-    if (url.includes('/api/v3/lat/')) return json({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'ABC123',
+    if (url.includes('/v2/point/')) return json({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'ABC123',
       lat: 0, lon: 5, alt_baro: 34000, gs: 420, track: 90, seen: 1, seen_pos: 2 }] });
     if (url.includes('/airline/')) return json({ response: [{ icao: 'ABC', name: 'Example Air' }] });
     return json({ response: { flightroute: { callsign_icao: 'ABC123', origin: airport('AAAA', 0), destination: airport('BBBB', 10) } } });
   } });
   const config = await (await worker.fetch(request('/api/config'))).json();
+  assert.deepEqual(config, { relay: true, telemetryProvider: 'adsb.lol', routeProvider: 'adsbdb' });
   const settings = await runtimeConfig({ fetcher: async () => json({ ...config, relayUrl: relayUrl + '/' }) });
   assert.equal(settings.relayUrl, relayUrl);
   const browserFetch = async (url, options) => {
@@ -46,12 +47,14 @@ test('GitHub browser configuration and a complete flight search use the external
   };
   const round = await findNearbyRound({ lat: 0, lon: 5, name: 'Test city' }, { ...settings, fetcher: browserFetch });
   assert.equal(round.mode, 'live');
-  assert.equal(round.provider, 'adsb.fi');
+  assert.equal(round.provider, 'adsb.lol');
   assert.equal(round.route.provider, 'adsbdb');
   assert.equal(round.route.destination.id, 'BBBB');
   const enriched = await enrichRouteAirline({ ...round.route, airlineCode: 'ABC' }, { ...settings, fetcher: browserFetch });
   assert.equal(enriched.airline.name, 'Example Air');
   assert.ok(paths.some(url => url.includes('api.adsbdb.com/v0/callsign/ABC123')));
+  assert.ok(paths.some(url => url === 'https://api.adsb.lol/v2/point/0/5/50'));
+  assert.ok(paths.every(url => !url.includes('adsb.fi')));
 });
 
 test('Cloudflare rejects other origins, arbitrary targets and unsupported methods before spending provider requests', async () => {
@@ -61,6 +64,7 @@ test('Cloudflare rejects other origins, arbitrary targets and unsupported method
     ['/api/nearby/0/0/50', { headers: { Origin: 'https://other.example' } }, 403],
     ['/api/nearby/0/0/50?url=https://other.example', {}, 400],
     ['/api/proxy', {}, 400],
+    ['/api/route/ABC123/0/0', {}, 400],
     ['/api/nearby/91/0/50', {}, 400],
     ['/api/nearby/0/0/50', { method: 'POST' }, 405],
     ['/api/config', { method: 'OPTIONS', headers: { 'Access-Control-Request-Method': 'POST' } }, 403],

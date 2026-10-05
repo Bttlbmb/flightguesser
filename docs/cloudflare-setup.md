@@ -1,6 +1,6 @@
 # Connect the GitHub game to Cloudflare
 
-The website remains on GitHub Pages. A separate Cloudflare Worker fetches live positions from adsb.fi and reported routes and airline names from adsbdb. No custom GitHub Actions workflow is needed.
+The website remains on GitHub Pages. A separate Cloudflare Worker fetches live positions from adsb.lol and reported routes and airline names from adsbdb. No custom GitHub Actions workflow is needed.
 
 ## Create the helper
 
@@ -9,7 +9,9 @@ The website remains on GitHub Pages. A separate Cloudflare Worker fetches live p
 3. Open the new Worker’s **Edit code** editor. Replace the example code with the complete contents of [`cloudflare/worker.js`](../cloudflare/worker.js), then deploy the edited code.
 4. Copy its public HTTPS address, such as `https://flightguesser-relay.your-subdomain.workers.dev`.
 
-Opening that address should show a short response identifying the Flightguesser relay. Opening `/api/config` should report `relay: true`, `telemetryProvider: adsb.fi` and `routeProvider: adsbdb`. These checks establish that the Worker is installed, not that its providers are reachable.
+Opening that address should show a short response identifying the Flightguesser relay. Opening `/api/config` should report `relay: true`, `telemetryProvider: adsb.lol` and `routeProvider: adsbdb`. These checks establish that the Worker is installed, not that its providers are reachable.
+
+The earlier Worker used adsb.fi. On 5 October 2026, the deployed Worker received HTTP 403 from that provider while requests from the maintainer’s computer succeeded. The standalone Cloudflare version therefore uses adsb.lol; verify an actual nearby request after redeploying before enabling the website connection. This change does not establish why adsb.fi rejected the request or guarantee that a different provider is reachable from Cloudflare.
 
 The dashboard file is self-contained JavaScript. It needs no database, bindings, secrets or packages. If editing the source relay, run `npm run build:relay` to regenerate it. `server/worker.js` and `server/cloudflare.js` are the authoritative sources.
 
@@ -31,6 +33,6 @@ Verify a Seoul search from the published GitHub website. If providers are reacha
 
 Only the fixed nearby, callsign and airline endpoints are forwarded. Browsers from `https://bttlbmb.github.io` receive permission headers; requests from other browser origins are rejected. These permissions are not private authentication: people can still make direct server requests to a public Worker. Caching, response size limits, request limits, provider pauses and cancellation are retained. The in-memory limits apply per Worker instance, not globally across Cloudflare.
 
-Follow [adsb.fi’s personal, non-commercial API terms](https://github.com/adsbfi/opendata#terms). The Worker keeps nearby requests one second apart per instance. No live aircraft responses are saved into the static website.
+The [adsb.lol API](https://www.adsb.lol/docs/open-data/api/) is available to everyone under ODbL 1.0; the game retains provider attribution. The Worker keeps nearby requests one second apart per instance. No live aircraft responses are saved into the static website.
 
 Cloudflare references: [Dashboard setup](https://developers.cloudflare.com/workers/get-started/dashboard/) and [CORS proxy example](https://developers.cloudflare.com/workers/examples/cors-header-proxy/).

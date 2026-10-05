@@ -101,7 +101,7 @@ export async function runtimeConfig({ fetcher = fetch, timeoutMs = 1500 } = {}) 
     const relayUrl = config.relay === true && config.relayUrl != null ? normalizeRelayUrl(config.relayUrl) : '';
     return { relay: config.relay === true,
       ...(relayUrl ? { relayUrl } : {}),
-      ...(config.telemetryProvider === 'adsb.fi' ? { telemetryProvider: 'adsb.fi' } : {}),
+      ...(['adsb.fi', 'adsb.lol'].includes(config.telemetryProvider) ? { telemetryProvider: config.telemetryProvider } : {}),
       ...(config.routeProvider === 'adsbdb' ? { routeProvider: 'adsbdb' } : {}),
     };
   } catch { return { relay: false }; }
