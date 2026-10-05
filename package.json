@@ -10,6 +10,7 @@
     "dev:live": "node scripts/serve.mjs --live",
     "preview": "node scripts/serve.mjs --dist",
     "build": "node scripts/build.mjs",
+    "publish:pages": "node scripts/publish-pages.mjs",
     "test": "node --test tests/*.test.mjs",
     "build:hosted": "node scripts/build.mjs --hosted",
     "data:check": "node scripts/prepare-practice.mjs --check",

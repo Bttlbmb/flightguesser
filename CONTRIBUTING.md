@@ -30,6 +30,8 @@ Tests cover networking, selection, city identity, geography, scoring, the globe 
 
 For GitHub Pages changes, run `npm run build` followed by `npm run test:pages` with Playwright available (or set `FLIGHTGUESSER_PLAYWRIGHT_PACKAGE` to its installed package directory). This serves the built files under `/flightguesser/` without a relay and checks desktop and phone practice, another round, configuration paths and live-failure recovery. These browser checks stay offline.
 
+Commit changes on `main`, then run `npm run publish:pages` to test, build and push both the source backup and the `gh-pages` website branch. The publishing command requires a clean source checkout and SSH access to `origin`. GitHub Pages must use **Deploy from a branch → gh-pages → /(root)**. No custom Actions workflow is required.
+
 The build lists its public assets explicitly. Add a new browser module to `scripts/build.mjs`; keep research output, secrets and server tools outside that list. Licence notices belong in every build.
 
 ## Preserve the data’s meaning

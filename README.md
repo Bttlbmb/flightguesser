@@ -50,15 +50,23 @@ The build puts the website and licence notices in `dist/`. It needs no network a
 
 ## Publish on GitHub Pages
 
-The repository is [Bttlbmb/flightguesser](https://github.com/Bttlbmb/flightguesser). The workflow in `.github/workflows/pages.yml` tests the game, verifies the recordings, builds `dist/`, and deploys that folder whenever `main` changes. All source code, data preparation tools, documentation and earlier Git history stay in the repository as a backup. Only the generated public assets are served as the website.
+The repository is [Bttlbmb/flightguesser](https://github.com/Bttlbmb/flightguesser). All source code, data preparation tools, documentation and earlier Git history stay on `main` as a backup. The `gh-pages` branch contains only the built website, its bundled data and licence notices. There is no custom GitHub Actions workflow.
 
 After making the repository public:
 
-1. Open **Settings → Pages** and select **GitHub Actions** under **Build and deployment → Source**. No publishing branch or folder is needed.
-2. Open **Actions → Deploy GitHub Pages → Run workflow**, choose **main**, and run it. The first push may have failed before Pages was enabled; a fresh run uses the saved source.
+1. Open **Settings → Pages** and select **Deploy from a branch** under **Build and deployment → Source**.
+2. Select the **gh-pages** branch and **/(root)** folder, then click **Save**.
 3. The website will be at [bttlbmb.github.io/flightguesser/](https://bttlbmb.github.io/flightguesser/).
 
-Keep `main` as the default branch. If you rename it, update `on.push.branches` in the workflow and any `github-pages` environment branch rules. Future pushes to `main` publish automatically. No deployment secrets or OpenAI hosting account are required.
+Keep `main` as the default branch for source code. To publish future changes, commit them on `main`, then run:
+
+```sh
+npm run publish:pages
+```
+
+This command tests the game, verifies the recordings, builds the static website, pushes the source backup to `main`, and pushes the built files to `gh-pages` using your Git SSH access. It does not switch your checkout or overwrite published history. Source-only pushes to `main` do not change the website. No deployment secrets or OpenAI hosting account are required.
+
+GitHub manages its own Pages publication internally and may display a built-in Pages run under Actions even when **Deploy from a branch** is selected. This project supplies no Actions workflow and does all testing and building locally. See [GitHub’s branch publishing instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
 
 Assets, imports, local data and runtime configuration use relative URLs so the site works under `/flightguesser/` and at a domain root. The static configuration in `public/config.json` disables the server relay.
 

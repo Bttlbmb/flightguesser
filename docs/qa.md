@@ -4,7 +4,7 @@
 
 All 133 offline tests pass, and `npm run data:check` reproduces the bundled recordings. Both the static and optional Worker builds succeed. The Pages browser check serves the actual static build at `/flightguesser/` in Chrome at 390×844 and 1440×1000. It verifies local asset paths, a recorded first-guess win, the next recording, relative runtime configuration, live-network failure recovery, and no page errors, missing files or horizontal overflow. Practice sends no external requests. Screenshots remain in ignored `test-results/pages/`.
 
-Live position probes with the GitHub Pages origin returned no browser-access permission header from adsb.lol or adsb.fi. This migration verifies static practice and honest failure recovery, not functioning direct live searches. GitHub deployment itself still requires the repository owner to enable Pages with GitHub Actions after making the repository public.
+Live position probes with the GitHub Pages origin returned no browser-access permission header from adsb.lol or adsb.fi. This migration verifies static practice and honest failure recovery, not functioning direct live searches. GitHub deployment itself still requires the repository owner to enable **Deploy from a branch**, selecting **gh-pages** and **/(root)**, after making the repository public. The custom Actions workflow has been removed; the website is tested and built locally.
 
 Offline tests check rules and data handling. Browser checks verify what a player can see and operate. Neither a fixture nor a resized desktop browser establishes current provider coverage, physical-phone keyboard behavior or screen-reader speech.
 
