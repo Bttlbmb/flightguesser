@@ -81,10 +81,11 @@ export async function requestJson(url, { signal, fetcher = fetch, timeoutMs = 10
   }
 }
 
-export async function runtimeConfig({ hostname = location.hostname, fetcher = fetch, timeoutMs = 1500, relay = false } = {}) {
+export async function runtimeConfig({ fetcher = fetch, timeoutMs = 1500 } = {}) {
   try {
-    // Hosted and localhost relays announce themselves; static previews can omit it.
-    const response = await fetcher('/api/config', { credentials: 'same-origin', signal: AbortSignal.timeout(timeoutMs) });
+    // Relative configuration works at a project subpath as well as a domain root.
+    // Static builds supply this file; local and Worker relays override it.
+    const response = await fetcher('./config.json', { credentials: 'same-origin', signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) return { relay: false };
     const config = await response.json();
     return { relay: config.relay === true,

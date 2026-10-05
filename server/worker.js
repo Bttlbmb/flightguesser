@@ -25,11 +25,11 @@ function json(status, body, extra = {}) {
     status, headers: { ...headers, ...extra },
   });
 }
-function retrySeconds(raw) {
+export function retrySeconds(raw) {
   const n = Number(raw);
   return /^\d+$/.test(raw ?? '') && Number.isSafeInteger(n) ? Math.max(1, n) : 60;
 }
-async function readJson(response) {
+export async function readJson(response) {
   if (!response.body) throw new Error('Missing response');
   const reader = response.body.getReader();
   const chunks = [];
@@ -53,6 +53,17 @@ async function readJson(response) {
   JSON.parse(text);
   return { text, size };
 }
+// Cancel queued work promptly instead of leaving a disconnected request asleep.
+function waitForSlot(delay, signal) {
+  return new Promise((resolve, reject) => {
+    const done = () => { signal.removeEventListener('abort', cancel); resolve(); };
+    const timer = setTimeout(done, delay);
+    const cancel = () => { clearTimeout(timer); reject(new DOMException('Request cancelled', 'AbortError')); };
+    if (signal.aborted) cancel();
+    else signal.addEventListener('abort', cancel, { once: true });
+  });
+}
+
 export function createHostedHandler({ assets = {}, fetcher = (url, options) => globalThis.fetch(url, options), now = Date.now, nearbyIntervalMs = 1000 } = {}) {
   const cache = new Map();
   const recent = [];
@@ -61,6 +72,7 @@ export function createHostedHandler({ assets = {}, fetcher = (url, options) => g
   return {
     async fetch(request) {
       const url = new URL(request.url);
+      if (url.pathname === '/config.json') url.pathname = '/api/config';
       if (!url.pathname.startsWith('/api/')) {
         if (!['GET', 'HEAD'].includes(request.method)) return json(405, { error: 'Read-only site' });
         const assetPath = url.pathname === '/' ? '/index.html' : url.pathname;
@@ -101,8 +113,14 @@ export function createHostedHandler({ assets = {}, fetcher = (url, options) => g
           const startAt = Math.max(now(), nextNearbyAt);
           nextNearbyAt = startAt + nearbyIntervalMs;
           const delay = Math.max(0, startAt - now());
-          if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+          if (delay) await waitForSlot(delay, timeout.signal);
         }
+        if (timeout.signal.aborted) throw new DOMException('Request cancelled', 'AbortError');
+        // Another concurrent request may have received a provider pause while
+        // this request waited for its slot. Do not send more work during it.
+        if (pauseUntil > now()) return json(429, { error: 'Provider requests are paused' }, {
+          'Retry-After': String(Math.ceil((pauseUntil - now()) / 1000)),
+        });
         const response = await fetcher(upstream, {
           signal: timeout.signal,
           redirect: 'manual',

@@ -37,13 +37,6 @@ export function compassPoint(degrees) {
   return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(((degrees % 360) + 360) % 360 / 45) % 8];
 }
 
-export function verticalState(rateFpm) {
-  if (!Number.isFinite(rateFpm)) return null;
-  if (rateFpm > 200) return 'Climbing';
-  if (rateFpm < -200) return 'Descending';
-  return 'Nearly level';
-}
-
 export function routeGeometry(aircraft, origin, destination) {
   if (![aircraft, origin, destination].every(validCoordinates)) return { plausible: false, reason: 'missing-coordinates' };
   const length = distanceKm(origin, destination);

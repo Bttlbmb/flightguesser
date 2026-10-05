@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { distanceKm, bearingDegrees, angularDifference, compassPoint, validCoordinates, verticalState, routeGeometry } from '../public/geo.js';
+import { distanceKm, bearingDegrees, angularDifference, compassPoint, validCoordinates, routeGeometry } from '../public/geo.js';
 
 test('great-circle distances handle the antimeridian, poles, and identical points', () => {
   assert.equal(distanceKm({ lat: 0, lon: 0 }, { lat: 0, lon: 0 }), 0);
@@ -18,14 +18,6 @@ test('bearing and compass wrap correctly without inventing a direction at the an
   assert.equal(angularDifference(-721, 1), 2);
   assert.equal(compassPoint(359), 'N');
   assert.equal(compassPoint(90), 'E');
-});
-
-test('near-level vertical rate is distinct from missing, including zero', () => {
-  assert.equal(verticalState(0), 'Nearly level');
-  assert.equal(verticalState(200), 'Nearly level');
-  assert.equal(verticalState(201), 'Climbing');
-  assert.equal(verticalState(-201), 'Descending');
-  assert.equal(verticalState(null), null);
 });
 
 test('geometry rejects direction-reversed and off-route matches', () => {

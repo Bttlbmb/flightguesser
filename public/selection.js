@@ -37,7 +37,6 @@ export function selectionProfile(round, place = round.place, { resolveDestinatio
     destinationIds: destinationRepeatIds(destinationAirport, destination),
     country: destinationAirport.country || '',
     airline: route.airlineCode || aircraft.callsign.slice(0, 3),
-    routeKey: `${route.origin.id}:${route.destination.id}`,
     lengthBand: bandFor(remainingKm),
     remainingKm, airportRemainingKm, destinationFromPlaceKm, headingError,
     localDestination, approaching,
@@ -52,7 +51,7 @@ export function selectionHistoryEntry(round, options = {}) {
   // History contains answer identities, never the player's location or telemetry.
   return {
     destinationIds: profile.destinationIds, country: profile.country,
-    airline: profile.airline, routeKey: profile.routeKey, lengthBand: profile.lengthBand,
+    airline: profile.airline, lengthBand: profile.lengthBand,
   };
 }
 

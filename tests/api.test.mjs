@@ -329,6 +329,11 @@ test('cancellation after a route body resolves cannot return a playable flight',
 test('relay configuration is optional and bounded on hosted and local origins', async () => {
   let requests = 0;
   const fetcher = async () => { requests++; return json({ relay: true }); };
+  assert.deepEqual(await runtimeConfig({ fetcher: async url => {
+    assert.equal(new URL(url, 'https://bttlbmb.github.io/flightguesser/').href,
+      'https://bttlbmb.github.io/flightguesser/config.json');
+    return json({ relay: false });
+  } }), { relay: false });
   assert.deepEqual(await runtimeConfig({ hostname: 'example.com', fetcher }), { relay: true });
   assert.equal(requests, 1);
   assert.deepEqual(await runtimeConfig({ hostname: 'localhost', fetcher }), { relay: true });

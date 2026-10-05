@@ -116,11 +116,13 @@ function searchIndex(cities) {
     if (!map.has(key)) map.set(key, []);
     if (!map.get(key).includes(city)) map.get(key).push(city);
   };
-  for (const city of cities) {
+  const ordered = [...cities].sort((a, b) => Number(b.major) - Number(a.major)
+    || cityLabel(a).localeCompare(cityLabel(b)) || a.id.localeCompare(b.id));
+  for (const city of ordered) {
     add(byId, normalize(city.id), city);
     for (const key of [...city.airportIds, ...city.airportCodes]) add(byAirport, normalize(key), city);
     terms.set(city, {
-      name: normalize(city.name), aliases: city.aliases.map(normalize), label: cityLabel(city),
+      name: normalize(city.name), aliases: city.aliases.map(normalize),
       primaryKeys: new Set([
         ...city.primaryAirportIds,
         ...city.airportLinks.filter(airport => city.primaryAirportIds.includes(airport.id)).map(airport => airport.code),
@@ -130,7 +132,7 @@ function searchIndex(cities) {
       countries.set(city.country, { code: city.country, name: normalize(countryName(city.country)) });
     }
   }
-  const index = { byId, byAirport, terms, countries: [...countries.values()].sort((a, b) => b.name.length - a.name.length) };
+  const index = { byId, byAirport, terms, ordered, countries: [...countries.values()].sort((a, b) => b.name.length - a.name.length) };
   searchIndexes.set(cities, index);
   return index;
 }
@@ -147,35 +149,35 @@ function countryIntent(countries, text) {
   return null;
 }
 
-// .total reports all matches before the cap; it is non-enumerable so this remains
-// an ordinary array for rendering, iteration and existing array consumers.
+// .total reports every match, even when the displayed result list is capped.
 export function searchCities(cities, query, limit = 8) {
   const text = normalize(query);
-  const result = options => {
-    const safeLimit = Number.isInteger(limit) && limit > 0 ? limit : 8;
-    const found = options.slice(0, safeLimit);
-    Object.defineProperty(found, 'total', { value: options.length });
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? limit : 8;
+  const result = (found, total) => {
+    Object.defineProperty(found, 'total', { value: total });
     return found;
   };
-  if (!text) return result([]);
+  if (!text) return result([], 0);
   const index = searchIndex(cities);
   const exactCity = index.byId.get(text);
   const exactAirport = index.byAirport.get(text);
   const intent = countryIntent(index.countries, text);
   const words = text.split(' ');
-  const matches = exactCity || exactAirport || (intent
-    ? cities.filter(city => city.country === intent.country && (!intent.initial || index.terms.get(city).name.startsWith(intent.initial)))
-    : cities.filter(city => words.every(word => city.search.includes(word))));
-  // Compute ranking once per match, rather than on every sort comparison. Keep
-  // cached exact-match arrays unchanged so another query cannot reorder them.
-  const ranked = matches.map(city => {
+  const buckets = [[], [], [], []];
+  let total = 0;
+  // Stable ordering is cached. A broad query counts all matches without sorting
+  // or allocating a result object for every airport on every keystroke.
+  for (const city of exactCity || exactAirport || index.ordered) {
+    if (!exactCity && !exactAirport) {
+      if (intent ? city.country !== intent.country : !words.every(word => city.search.includes(word))) continue;
+    }
     const terms = index.terms.get(city);
+    if (intent?.initial && !exactCity && !exactAirport && !terms.name.startsWith(intent.initial)) continue;
+    total++;
     const rank = exactCity ? 0 : exactAirport ? (terms.primaryKeys.has(text) ? 0 : 1)
       : terms.name === text || terms.aliases.includes(text) ? (city.fallback ? 1 : 0)
       : terms.name.startsWith(text) || terms.aliases.some(alias => alias.startsWith(text)) ? 2 : 3;
-    return { city, rank, label: terms.label };
-  });
-  ranked.sort((a, b) => a.rank - b.rank || Number(b.city.major) - Number(a.city.major)
-    || a.label.localeCompare(b.label) || a.city.id.localeCompare(b.city.id));
-  return result(ranked.map(match => match.city));
+    if (buckets[rank].length < safeLimit) buckets[rank].push(city);
+  }
+  return result(buckets.flat().slice(0, safeLimit), total);
 }

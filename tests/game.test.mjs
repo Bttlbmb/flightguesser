@@ -1,3 +1,4 @@
+import { decodeAirportData } from '../public/airports.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -9,7 +10,7 @@ const [airlineRound] = JSON.parse(await readFile(new URL('../public/data/practic
 // Most rule cases exercise the shorter sequence used when airline data is absent.
 const { airline: omittedAirline, airlineCode: omittedCode, ...routeWithoutAirline } = airlineRound.route;
 const round = { ...airlineRound, route: routeWithoutAirline };
-const airports = JSON.parse(await readFile(new URL('../public/data/airports.json', import.meta.url), 'utf8'));
+const airports = decodeAirportData(JSON.parse(await readFile(new URL('../public/data/airports.json', import.meta.url), 'utf8')));
 const airport = code => airports.find(value => value.code === code);
 const city = code => destinationCities(airport(code)).primary;
 const roundTo = code => ({ ...round, route: { ...round.route, destination: airport(code) } });
@@ -269,14 +270,6 @@ test('six different wrong cities end the round while retaining the frozen answer
   assert.equal(submitGuess(game, game.destination.primary).reason, 'finished');
 });
 
-test('manual reveal is terminal and does not permit later guesses or clues', () => {
-  const game = createGame(round);
-  game.status = 'revealed';
-  assert.equal(submitGuess(game, game.destination.primary).reason, 'finished');
-  assert.equal(revealClue(game), false);
-  assert.equal(game.guesses.length, 0);
-});
-
 test('telemetry never becomes a clue, even when all aircraft facts are reported', () => {
   const reported = structuredClone(round);
   reported.aircraft.altitudeFt = 31000;
@@ -308,45 +301,11 @@ test('an unmappable or invalid destination never opens an unguessable city round
   }
 });
 
-test('hard distances use consistent bounded ranges, including near-zero and band boundaries', () => {
-  for (const [distance, expected] of [[0, '<50 km'], [49.999, '<50 km'], [50, '50–100 km'], [99.999, '50–100 km'], [258, '250–300 km'], [999.999, '950–1,000 km'], [1000, '1,000–1,100 km'], [1076, '1,000–1,100 km'], [20016, '20,000–20,100 km']]) {
-    assert.equal(formatClueDistance(distance, 'hard'), expected);
+test('distance clues round kilometres and reject missing or invalid distances', () => {
+  for (const [distance, expected] of [[0, '<1 km'], [.5, '<1 km'], [1, '1 km'], [258.4, '258 km'], [1076, '1,076 km']]) {
+    assert.equal(formatClueDistance(distance), expected);
   }
-  assert.equal(formatClueDistance(258), '258 km');
-  assert.equal(formatClueDistance(1076), '1,076 km');
-  assert.equal(formatClueDistance(.5), '<1 km');
   for (const distance of [null, NaN, Infinity, -1]) assert.throws(() => formatClueDistance(distance), /distance/);
-  assert.throws(() => createGame(round, { difficulty: 'unknown' }), /difficulty/);
-});
-
-test('hard mode bands both destination distances and freezes its first miss and difficulty', () => {
-  const game = createGame(airlineRound, { difficulty: 'hard' });
-  assert.equal(game.difficulty, 'hard');
-  const distance = game.clues.find(clue => clue.title === 'Distance remaining');
-  assert.equal(distance.value, formatClueDistance(distanceKm(game.round.aircraft, game.destination.primary), 'hard'));
-  const miss = submitGuess(game, city('LHR')).guess;
-  const reference = structuredClone(game.clues[miss.clueIndex]);
-  assert.equal(reference.value, '9,300–9,400 km · northeast');
-  assert.throws(() => { game.difficulty = 'normal'; }, TypeError);
-  for (const code of ['HND', 'ICN', 'CJU', 'JFK', 'CDG']) submitGuess(game, city(code));
-  assert.deepEqual(game.clues.filter(clue => clue.title === reference.title), [reference]);
-  assert.equal(game.status, 'lost');
-  assert.equal(game.guesses.length, MAX_GUESSES);
-});
-
-test('hard paid reveals remain sequential, consume one guess and preserve revealed history', () => {
-  const game = createGame(airlineRound, { difficulty: 'hard' });
-  assert.equal(revealClue(game), true);
-  assert.equal(game.clues[game.guesses[0].clueIndex].title, 'Destination country');
-  const paid = structuredClone(game.clues[1]);
-  const miss = submitGuess(game, city('LHR')).guess;
-  assert.equal(game.clues[miss.clueIndex].title, 'Distance & direction');
-  assert.deepEqual(game.clues[game.guesses[0].clueIndex], paid);
-  assert.equal(revealClue(game), true);
-  assert.equal(game.clues[game.guesses.at(-1).clueIndex].title, 'Distance remaining');
-  assert.equal(game.guesses.length, 3);
-  assert.equal(game.assistance, 2);
-  assert.equal(submitGuess(game, game.destination.primary).status, 'won');
 });
 
 test('current direction preserves true north and explains that the aircraft can turn', () => {
@@ -365,7 +324,7 @@ test('served-city labels and initials include Kraków and Athens without removin
     assert.equal(createGame(source).destination.primary.name, main);
     assert.deepEqual(cluesForRound(source).at(-1).value.split(' / '), initials);
     for (const name of [main, secondary]) {
-      const game = createGame(source, { difficulty: 'hard' });
+      const game = createGame(source);
       assert.equal(submitGuess(game, linked(code, name)).status, 'won');
       assert.equal(game.round.route.destination.code, code);
       assert.equal(game.clues.some(clue => clue.title === 'Distance & direction'), false);

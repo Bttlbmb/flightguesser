@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { mkdtemp, mkdir, writeFile, symlink, rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { createGameServer, upstreamForPath } from '../scripts/serve.mjs';
 
 async function openServer(t, options) {
@@ -34,11 +35,12 @@ test('the local relay accepts only fixed nearby and callsign route upstreams', (
 });
 
 test('static serving streams public files and keeps HEAD read-only', async t => {
-  const temporary = await mkdtemp('/private/tmp/flightguesser-server-');
+  const temporary = await mkdtemp(join(tmpdir(), 'flightguesser-server-'));
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const directory = join(temporary, 'public');
   await mkdir(directory);
   await writeFile(join(directory, 'index.html'), '<title>Flightguesser</title>');
+  await writeFile(join(directory, '.env'), 'not public');
   await writeFile(join(temporary, 'private.txt'), 'outside public');
   await symlink(join(temporary, 'private.txt'), join(directory, 'linked.txt'));
   const port = await openServer(t, { directory });
@@ -53,9 +55,11 @@ test('static serving streams public files and keeps HEAD read-only', async t => 
   assert.equal((await get(port, '/linked.txt')).status, 403);
   assert.equal((await get(port, '/..%2fprivate.txt')).status, 403);
   assert.equal((await get(port, '/missing')).status, 404);
+  assert.equal((await get(port, '/.env')).status, 404);
   assert.equal((await get(port, '/', { method: 'POST' })).status, 405);
   assert.equal((await get(port, '/', { headers: { Host: `example.com:${port}` } })).status, 403);
   assert.deepEqual(JSON.parse((await get(port, '/api/config')).body), { relay: false });
+  assert.deepEqual(JSON.parse((await get(port, '/config.json')).body), { relay: false });
   assert.equal((await get(port, '/api/nearby/0/0/50')).status, 404);
 });
 
@@ -138,4 +142,19 @@ test('concurrent requests for one snapshot do not count its cached bytes twice',
   const results = await Promise.all([get(port, '/api/nearby/0/0/50'), get(port, '/api/nearby/0/0/50')]);
   assert.deepEqual(results.map(result => result.status), [200, 200]);
   assert.equal((await get(port, '/api/nearby/0/1/50')).status, 200);
+});
+
+
+test('the local relay rejects redirects and unsupported query parameters', async t => {
+  let calls = 0;
+  const port = await openServer(t, { live: true, fetcher: async (_url, options) => {
+    calls++;
+    assert.equal(options.redirect, 'manual');
+    return new Response('', { status: 302, headers: { Location: 'https://other.example' } });
+  } });
+  assert.equal((await get(port, '/api/config?extra=true')).status, 400);
+  assert.equal((await get(port, '/api/nearby/0/0/50?extra=true')).status, 400);
+  assert.equal(calls, 0);
+  assert.equal((await get(port, '/api/nearby/0/0/50')).status, 502);
+  assert.equal(calls, 1);
 });

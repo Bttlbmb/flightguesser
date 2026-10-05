@@ -1,4 +1,5 @@
 import { validCoordinates, distanceKm, routeGeometry } from './geo.js';
+import { validAirport } from './airports.js';
 
 export const MAX_POSITION_AGE_SECONDS = 30;
 export const MAX_RESPONSE_AGE_SECONDS = 60;
@@ -27,12 +28,7 @@ export function normalizeAirport(raw, provider = 'adsb.lol') {
     city: raw.location || raw.name, country: raw.countryiso2,
     lat: number(raw.lat), lon: number(raw.lon),
   };
-  if (typeof airport.id !== 'string' || !/^[A-Z0-9-]{3,8}$/.test(airport.id)
-    || typeof airport.code !== 'string' || !/^[A-Z0-9]{3,4}$/.test(airport.code)
-    || typeof airport.name !== 'string' || !airport.name.trim() || airport.name.length > 300
-    || typeof airport.city !== 'string' || !airport.city.trim() || airport.city.length > 300
-    || (airport.country != null && (typeof airport.country !== 'string' || !/^[A-Z]{2}$/.test(airport.country)))
-    || !validCoordinates(airport)) return null;
+  if (!validAirport(airport)) return null;
   return airport;
 }
 

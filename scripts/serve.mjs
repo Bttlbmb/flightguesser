@@ -1,4 +1,4 @@
-import { upstreamForPath as hostedUpstreamForPath } from '../server/worker.js';
+import { upstreamForPath as hostedUpstreamForPath, readJson, retrySeconds } from '../server/worker.js';
 import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
 import { realpath, stat } from 'node:fs/promises';
@@ -41,7 +41,7 @@ export function createGameServer({ directory = resolve(projectRoot, 'public'), l
   const contact = process.env.FLIGHTGUESSER_CONTACT;
   if (contact && (contact.length > 200 || /[\r\n]/.test(contact))) throw new Error('Invalid contact identifier');
   // The provider rejects Node's generic identifier; sustained use needs a real contact.
-  const userAgent = `Flightguesser-local-MVP/0.1 (${contact || 'local-only technical spike'})`;
+  const userAgent = `Flightguesser/0.1 (${contact || 'local development'})`;
 
   async function relay(req, res, pathname) {
     // HEAD must not spend provider requests or cache a provider's empty response body.
@@ -77,28 +77,19 @@ export function createGameServer({ directory = resolve(projectRoot, 'public'), l
     try {
       const response = await fetcher(upstream, {
         signal: AbortSignal.any([disconnected.signal, AbortSignal.timeout(10000)]),
+        redirect: 'manual',
         headers: { Accept: 'application/json', 'User-Agent': userAgent },
       });
       if (!response.ok) {
         if (response.status === 429) {
-          const raw = response.headers.get('retry-after');
-          const value = Number(raw);
-          const seconds = /^\d+$/.test(raw ?? '') && Number.isSafeInteger(value) ? Math.max(1, value) : 60;
+          const seconds = retrySeconds(response.headers.get('retry-after'));
           upstreamPauseUntil = Math.max(upstreamPauseUntil, Date.now() + seconds * 1000);
           res.setHeader('Retry-After', String(seconds));
           return send(res, 429, { error: 'Aircraft provider unavailable', retryAfter: seconds });
         }
         return send(res, 502, { error: 'Aircraft provider unavailable' });
       }
-      const chunks = [];
-      let bytes = 0;
-      for await (const chunk of response.body) {
-        bytes += chunk.byteLength;
-        if (bytes > 5_000_000) throw new Error('Response too large');
-        chunks.push(chunk);
-      }
-      const text = new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks, bytes));
-      JSON.parse(text);
+      const { text, size: bytes } = await readJson(response);
       // Keep validated JSON once, with a total byte budget as well as an entry limit.
       // Large nearby snapshots must not multiply into hundreds of MB of cached objects.
       // A concurrent request may have filled this key while the provider was responding.
@@ -123,7 +114,8 @@ export function createGameServer({ directory = resolve(projectRoot, 'public'), l
     if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'Read-only server' });
     try {
       const url = new URL(req.url, `http://${req.headers.host}`);
-      if (url.pathname === '/api/config') return send(res, 200, { relay: live });
+      if (url.pathname.startsWith('/api/') && url.search) return send(res, 400, { error: 'Unsupported data request' });
+      if (url.pathname === '/api/config' || url.pathname === '/config.json') return send(res, 200, { relay: live });
       if (url.pathname.startsWith('/api/')) {
         if (!live) return send(res, 404, { error: 'Data relay is disabled' });
         return await relay(req, res, url.pathname);
@@ -131,6 +123,7 @@ export function createGameServer({ directory = resolve(projectRoot, 'public'), l
       const pathname = decodeURIComponent(url.pathname);
       const file = resolve(root, `.${pathname === '/' ? '/index.html' : pathname}`);
       if (!file.startsWith(root + sep)) return send(res, 403, { error: 'Outside public files' });
+      if (pathname.split('/').some(part => part.startsWith('.'))) return send(res, 404, { error: 'Not found' });
       const realRoot = await (canonicalRoot ??= realpath(root));
       const realFile = await realpath(file);
       // A link placed among public assets must not expose a file outside that directory.

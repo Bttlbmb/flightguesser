@@ -2,4 +2,6 @@ node_modules/
 dist/
 .DS_Store
 .env
+.env.*
 test-results/
+docs/evidence/live-sample-*/

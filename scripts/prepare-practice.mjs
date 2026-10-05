@@ -1,6 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { aircraftCandidates, normalizeRoute, normalizeAirline, observationTime } from '../public/flights.js';
 
+if (process.argv.slice(2).some(arg => arg !== '--check') || process.argv.length > 3) throw new Error('Usage: node scripts/prepare-practice.mjs [--check]');
+
 const evidence = new URL('../docs/evidence/', import.meta.url);
 const payload = JSON.parse(await readFile(new URL('selection-seoul-nearby.json', evidence), 'utf8'));
 const place = { name: 'Seoul', lat: 37.5665, lon: 126.978, kind: 'city' };
@@ -22,5 +24,12 @@ for (const callsign of ['KAL2197', 'ESR209', 'APJ735', 'ESR206']) {
   route.matchedAt = recordedAt;
   rounds.push({ mode: 'practice', aircraft, route, place, recordedAt, searchRadiusNm: 50, provider: 'adsb.lol' });
 }
-await writeFile(new URL('../public/data/practice.json', import.meta.url), JSON.stringify(rounds, null, 2) + '\n');
-console.log(`Prepared ${rounds.length} recorded rounds from actual spike evidence`);
+const target = new URL('../public/data/practice.json', import.meta.url);
+const output = JSON.stringify(rounds) + '\n';
+if (process.argv.includes('--check')) {
+  if (await readFile(target, 'utf8') !== output) throw new Error('Practice data needs rebuilding');
+  console.log('Practice data matches its original observations and routes');
+} else {
+  await writeFile(target, output);
+  console.log(`Prepared ${rounds.length} recorded rounds from original evidence`);
+}

@@ -4,34 +4,24 @@ import { destinationCities, cityMatchesAirport, cityLabel } from './destinations
 import { normalizeAirline } from './flights.js';
 
 export const MAX_GUESSES = 6;
-export const DIFFICULTIES = Object.freeze(['normal', 'hard']);
 
-// Bands deliberately coarsen only destination distances, not the observation's
-// distance from the starting place. Both destination clues use the same policy.
-export function formatClueDistance(distance, difficulty = 'normal') {
+/** Destination clues use rounded straight-line kilometres, never arrival times. */
+export function formatClueDistance(distance) {
   if (!Number.isFinite(distance) || distance < 0) throw new RangeError('A distance must be a nonnegative number.');
-  if (!DIFFICULTIES.includes(difficulty)) throw new Error('Choose Normal or Hard difficulty.');
-  const number = value => value.toLocaleString('en');
-  if (difficulty === 'normal') return `${distance < 1 ? '<1' : number(Math.round(distance))} km`;
-  if (distance < 50) return '<50 km';
-  const width = distance < 1000 ? 50 : 100;
-  const lower = Math.floor(distance / width) * width;
-  return `${number(lower)}–${number(lower + width)} km`;
+  return `${distance < 1 ? '<1' : Math.round(distance).toLocaleString('en')} km`;
 }
 
-export function createGame(round, { difficulty = 'normal' } = {}) {
-  if (!DIFFICULTIES.includes(difficulty)) throw new Error('Choose Normal or Hard difficulty.');
+export function createGame(round) {
   const destination = destinationCities(round.route.destination);
   if (!destination.primary || !destination.accepted.length) throw new Error('The reported airport has no usable destination city.');
-  // Flight facts and difficulty stay fixed. The first missed city adds one
+  // Flight facts stay fixed. The first missed city adds one
   // reference-city clue; later guesses cannot generate fresh geometry.
-  const clues = cluesForRound(round, destination, difficulty);
+  const clues = cluesForRound(round, destination);
   const game = { round, destination, clues, guesses: [], clueIndex: 0, assistance: 0, status: 'playing' };
-  Object.defineProperty(game, 'difficulty', { value: difficulty, enumerable: true });
   return game;
 }
 
-export function cluesForRound(round, destination = destinationCities(round.route.destination), difficulty = 'normal') {
+export function cluesForRound(round, destination = destinationCities(round.route.destination)) {
   const a = round.aircraft;
   const r = round.route;
   const hasTrueHeading = Number.isFinite(a.trueHeading) && a.trueHeading >= 0 && a.trueHeading < 360;
@@ -44,7 +34,7 @@ export function cluesForRound(round, destination = destinationCities(round.route
   const clues = [initial];
   if (r.destination.country) clues.push({ kind: 'text', title: 'Destination country', value: countryName(r.destination.country), detail: 'From the reported route.' });
   const straightLine = distanceKm(a, destination.primary);
-  if (straightLine !== null) clues.push({ kind: 'text', title: 'Distance remaining', value: formatClueDistance(straightLine, difficulty), detail: 'Straight-line estimate to the main destination city. The flight path may be longer.' });
+  if (straightLine !== null) clues.push({ kind: 'text', title: 'Distance remaining', value: formatClueDistance(straightLine), detail: 'Straight-line estimate to the main destination city. The flight path may be longer.' });
   const airline = normalizeAirline(r.airline, r.airlineCode, r.airline?.provider);
   if (airline && r.callsign?.startsWith(airline.icao)) clues.push({ kind: 'text', title: 'Airline', value: airline.name, detail: 'Operating airline.' });
   const initials = [...new Set(destination.accepted.map(city => Array.from(city.name.trim())[0]?.toLocaleUpperCase('en')).filter(Boolean))];
@@ -67,7 +57,7 @@ export function submitGuess(game, city) {
     const direction = ({ N: 'north', NE: 'northeast', E: 'east', SE: 'southeast', S: 'south', SW: 'southwest', W: 'west', NW: 'northwest' })[compassPoint(guess.bearing)] ?? 'Nearby';
     // Insert after already revealed facts so paid-clue history keeps its indexes.
     // This clue remains tied to the first city; later guesses never update it.
-    game.clues.splice(game.clueIndex + 1, 0, { kind: 'text', title: 'Distance & direction', value: `${formatClueDistance(guess.distanceKm, game.difficulty)} · ${direction}`, detail: `From ${cityLabel(city)} to the main destination city.` });
+    game.clues.splice(game.clueIndex + 1, 0, { kind: 'text', title: 'Distance & direction', value: `${formatClueDistance(guess.distanceKm)} · ${direction}`, detail: `From ${cityLabel(city)} to the main destination city.` });
     game.clueIndex++;
     guess.clueIndex = game.clueIndex;
   }

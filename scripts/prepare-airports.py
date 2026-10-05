@@ -56,6 +56,11 @@ if not airports:
 airports.sort(key=lambda airport: (not airport["major"], airport["city"], airport["code"]))
 target = Path(__file__).resolve().parents[1] / "public/data/airports.json"
 target.parent.mkdir(parents=True, exist_ok=True)
-target.write_text(json.dumps(airports, ensure_ascii=False, separators=(",", ":")) + "\n")
+# Version 1 rows: id, code, name, city, country, latitude, longitude, optional major=1.
+# Keep the schema in sync with decodeAirportData in public/airports.js.
+packed = [[a["id"], a["code"], a["name"], a["city"], a["country"], a["lat"], a["lon"]]
+          + ([1] if a["major"] else []) for a in airports]
+target.write_text(json.dumps({"version": 1, "airports": packed}, ensure_ascii=False,
+                            separators=(",", ":")) + "\n", encoding="utf-8")
 print(f"Prepared {len(airports)} airports; {target.stat().st_size:,} bytes")
 print(f"Source SHA-256: {hashlib.sha256(source.read_bytes()).hexdigest()}")

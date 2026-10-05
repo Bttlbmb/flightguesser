@@ -1,3 +1,4 @@
+import { decodeAirportData } from '../public/airports.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -5,7 +6,7 @@ import { indexCities, searchCities, destinationCities, destinationRepeatIds, cit
 import { CITY_LINKS } from '../public/data/city-links.js';
 import { mergeRouteAirports } from '../public/airports.js';
 
-const airports = JSON.parse(await readFile(new URL('../public/data/airports.json', import.meta.url), 'utf8'));
+const airports = decodeAirportData(JSON.parse(await readFile(new URL('../public/data/airports.json', import.meta.url), 'utf8')));
 const byID = id => airports.find(airport => airport.id === id);
 const subset = (...ids) => indexCities(ids.map(byID));
 

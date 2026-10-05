@@ -71,7 +71,7 @@ test('a browser search opens a live round through hosted telemetry and fallback 
     return json({ response: { flightroute: { callsign_icao: 'ABC123', origin: airport('AAAA', 0), destination: airport('BBBB', 10) } } });
   } });
   const browserFetch = async (path, init) => worker.fetch(req(path, init));
-  const settings = await (await browserFetch('/api/config')).json();
+  const settings = await (await browserFetch('/config.json')).json();
   assert.deepEqual(settings, { relay: true, telemetryProvider: 'adsb.fi', routeProvider: 'adsbdb' });
   const round = await findNearbyRound({ lat: 0, lon: 5, name: 'Test city' }, { ...settings, fetcher: browserFetch });
   assert.equal(round.mode, 'live');
@@ -102,4 +102,43 @@ test('hosted provider redirects are rejected without following the new destinati
   } });
   assert.equal((await worker.fetch(req('/api/nearby/0/0/50'))).status, 502);
   assert.equal(calls, 1);
+});
+
+
+test('a cancelled hosted request does not send work while waiting for a provider slot', async () => {
+  let calls = 0;
+  const worker = createHandler({ nearbyIntervalMs: 10000, fetcher: async () => { calls++; return json({ ac: [] }); } });
+  assert.equal((await worker.fetch(req('/api/nearby/0/0/50'))).status, 200);
+  const controller = new AbortController();
+  const pending = worker.fetch(req('/api/nearby/1/0/50', { signal: controller.signal }));
+  controller.abort();
+  const response = await Promise.race([pending, new Promise((_, reject) => {
+    const timer = setTimeout(() => reject(new Error('Cancellation did not clear the queue')), 500);
+    timer.unref();
+  })]);
+  assert.equal(response.status, 502);
+  assert.equal(calls, 1);
+});
+
+test('queued hosted requests respect a provider pause received by another request', async () => {
+  let calls = 0, release;
+  const worker = createHandler({ nearbyIntervalMs: 20, fetcher: () => {
+    calls++;
+    return new Promise(resolve => { release = resolve; });
+  } });
+  const first = worker.fetch(req('/api/nearby/0/0/50'));
+  const queued = worker.fetch(req('/api/nearby/1/0/50'));
+  release(new Response('{}', { status: 429, headers: { 'Retry-After': '60' } }));
+  assert.equal((await first).status, 429);
+  assert.equal((await queued).status, 429);
+  assert.equal(calls, 1);
+});
+
+test('pre-cancelled hosted requests never reach a provider', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  let calls = 0;
+  const worker = createHostedHandler({ fetcher: async () => { calls++; return json({}); } });
+  assert.equal((await worker.fetch(req('/api/nearby/0/0/50', { signal: controller.signal }))).status, 502);
+  assert.equal(calls, 0);
 });

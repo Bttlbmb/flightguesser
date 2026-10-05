@@ -1,8 +1,9 @@
 import { findNearbyRound, enrichRouteAirline, runtimeConfig, DataError } from './api.js';
-import { airportLabel, countryName, mergeRouteAirports, hasMunicipality } from './airports.js';
+import { airportLabel, countryName, mergeRouteAirports, resolveRouteAirport } from './airports.js';
 import { indexCities, searchCities, cityLabel, destinationRepeatIds } from './destinations.js';
-import { validCoordinates, distanceKm } from './geo.js';
-import { rememberSelection } from './selection.js';
+import { distanceKm } from './geo.js';
+import { loadAirportData, loadPracticeData, createPracticeRotation } from './data.js';
+import { rememberSelection, LOCAL_DESTINATION_RADIUS_KM } from './selection.js';
 import { createGame, submitGuess, revealClue, MAX_GUESSES } from './game.js';
 
 const app = document.querySelector('#app');
@@ -32,7 +33,7 @@ let airportPromise;
 let practicePromise;
 let globePromise;
 let globeHTML;
-let practiceIndex = 0;
+let practiceRotation;
 let lastPlace;
 let elsewhereCityIndex = 0;
 let retryTimer;
@@ -168,7 +169,7 @@ function lookElsewhere() {
     const index = (elsewhereCityIndex + offset) % cities.length;
     const city = cities[index];
     // A device location can be near a listed city without sharing its name.
-    if (distanceKm(lastPlace, city) < 150) continue;
+    if (distanceKm(lastPlace, city) < LOCAL_DESTINATION_RADIUS_KM) continue;
     elsewhereCityIndex = (index + 1) % cities.length;
     startSearch({ ...city, kind: 'city' });
     return;
@@ -190,7 +191,7 @@ async function startSearch(place) {
       signal: searchController.signal, ...config, excluded: playedAircraft, excludedDestinationIds: lastDestinationIds, history: selectionHistory,
       // Use the same municipality recovery as the city picker. Provider positions
       // stay intact; a missing city label must not defeat destination rotation.
-      resolveDestination: destinationResolver(airports),
+      resolveDestination: endpoint => resolveRouteAirport(airports, endpoint),
       onProgress: progress => {
         if (token !== generation) return;
         const node = app.querySelector('#loading-detail');
@@ -213,72 +214,32 @@ async function practice() {
   const token = invalidatePending();
   renderLoading('Opening a recorded flight.', 'A real recorded observation, with its reported destination.');
   try {
-    practicePromise ??= loadLocalArray('./data/practice.json', 'practice', 'The recorded flight could not be loaded. Try again.',
-      validRecordedRound)
-      .catch(error => { practicePromise = null; throw error; });
+    practicePromise ??= loadPracticeData().catch(error => { practicePromise = null; throw error; });
     const [rounds, airports] = await Promise.all([practicePromise, loadAirports()]);
     if (token !== generation) return;
-    const resolveDestination = destinationResolver(airports);
-    // Live and recorded rounds share the last destination. Skip recordings that
-    // accept any of the same cities, even when they use a different airport.
-    const nextIndex = Array.from({ length: rounds.length }, (_, offset) => (practiceIndex + offset) % rounds.length)
-      .find(index => !destinationRepeatIds(resolveDestination(rounds[index].route.destination)).some(id => lastDestinationIds.has(id)));
-    if (nextIndex === undefined) throw new DataError('no-new-practice-destination', 'No recorded flight has a different destination. Choose a starting city to find another flight.');
-    const round = rounds[nextIndex];
+    practiceRotation ??= createPracticeRotation(rounds);
+    const round = practiceRotation.next(lastDestinationIds, endpoint => resolveRouteAirport(airports, endpoint));
+    if (!round) throw new DataError('no-new-practice-destination', 'No recorded flight has a different destination. Choose a starting city to find another flight.');
     await openRound(round, token);
-    // A cancelled or failed load should not consume a recorded round.
-    if (token === generation) practiceIndex = (nextIndex + 1) % rounds.length;
+    // Cancellation and failed openings must leave an unseen recording at the front.
+    if (token === generation) practiceRotation.commit(round);
   } catch (error) { if (token === generation) renderError(error); }
 }
 
-function validLocalAirport(airport) {
-  return validCoordinates(airport) && typeof airport.id === 'string' && /^[A-Z0-9-]{3,8}$/.test(airport.id)
-    && typeof airport.code === 'string' && /^[A-Z0-9]{3,4}$/.test(airport.code)
-    && typeof airport.name === 'string' && !!airport.name.trim() && airport.name.length <= 300
-    && (airport.country == null || typeof airport.country === 'string' && /^[A-Z]{2}$/.test(airport.country));
-}
-
-const validRecordedTime = value => Number.isFinite(value) && Number.isFinite(new Date(value).getTime());
-
-function validRecordedRound(round) {
-  const aircraft = round?.aircraft, route = round?.route;
-  return round?.mode === 'practice' && validRecordedTime(round.recordedAt)
-    && validCoordinates(aircraft) && validRecordedTime(aircraft.positionObservedAt)
-    && Number.isFinite(aircraft.track) && aircraft.track >= 0 && aircraft.track < 360
-    && Number.isFinite(aircraft.distanceFromPlaceKm) && aircraft.distanceFromPlaceKm >= 0
-    && typeof aircraft.callsign === 'string' && /^[A-Z]{3}\d[A-Z0-9]{0,6}$/.test(aircraft.callsign)
-    && validLocalAirport(route?.origin) && validLocalAirport(route?.destination)
-    && route.origin.id !== route.destination.id && route.callsign === aircraft.callsign
-    && ['adsb.lol', 'adsbdb'].includes(route.provider)
-    && typeof round.place?.name === 'string' && !!round.place.name.trim();
-}
-
-async function loadLocalArray(path, code, message, validEntry) {
-  try {
-    const response = await fetch(path, { signal: AbortSignal.timeout(10000), credentials: 'omit' });
-    if (!response.ok) throw new Error('Unavailable data file');
-    const data = await response.json();
-    if (!Array.isArray(data) || !data.length || !data.every(validEntry)) throw new Error('Invalid data file');
-    return data;
-  } catch {
-    // Missing, corrupt, and timed-out bundled files need the same useful recovery
-    // message; parser and network errors are implementation details.
-    throw new DataError(code, message);
-  }
-}
-
 function loadAirports() {
-  return airportPromise ??= loadLocalArray('./data/airports.json', 'airports', 'The city list could not be loaded. Try again.',
-    validLocalAirport)
-    .catch(error => { airportPromise = null; throw error; });
+  return airportPromise ??= loadAirportData().catch(error => { airportPromise = null; throw error; });
 }
 
-function destinationResolver(airports) {
-  const airportById = new Map(airports.map(airport => [airport.id, airport]));
-  return endpoint => {
-    const indexed = airportById.get(endpoint.id);
-    return hasMunicipality(endpoint) || !hasMunicipality(indexed) ? endpoint : { ...endpoint, city: indexed.city };
-  };
+async function loadGlobe() {
+  let timer;
+  try {
+    // A stalled module gets the same compass fallback as a failed one.
+    return await Promise.race([
+      import('./globe.js'),
+      new Promise(resolve => { timer = setTimeout(() => resolve({ globeHTML: () => '' }), 1500); }),
+    ]);
+  } catch { return { globeHTML: () => '' }; }
+  finally { clearTimeout(timer); }
 }
 
 async function openRound(round, token) {
@@ -286,12 +247,12 @@ async function openRound(round, token) {
   // The map library and city list are needed only once a round opens. Load them
   // together; the welcome screen needs neither dataset.
   // A failed optional map still leaves the compass and all game clues usable.
-  globePromise ??= import('./globe.js').catch(() => ({ globeHTML: () => '' }));
+  globePromise ??= loadGlobe();
   const [airports, globe] = await Promise.all([airportsReady, globePromise]);
   if (token !== generation) return;
   globeHTML = globe.globeHTML;
   const mergedAirports = mergeRouteAirports(airports, round.route);
-  const cityEndpoint = endpoint => endpoint ? { ...endpoint, city: mergedAirports.find(airport => airport.id === endpoint.id)?.city ?? endpoint.city } : endpoint;
+  const cityEndpoint = endpoint => ({ ...endpoint, city: resolveRouteAirport(airports, endpoint).city });
   let game;
   try {
     game = createGame({ ...round, route: { ...round.route, origin: cityEndpoint(round.route.origin), destination: cityEndpoint(round.route.destination) } });
@@ -610,18 +571,18 @@ function showInfo(kind) {
   const content = document.querySelector('#info-content');
   if (kind === 'help') {
     title.textContent = 'How to play';
-    content.innerHTML = '<ol><li>Find a nearby flight or choose a starting city. Your starting place is where we look for a plane, not where it took off.</li><li>Search for its destination city, select it and press Guess. You have six tries.</li><li>Your first missed city guess reveals one combined distance-and-direction clue from that city to the main destination city. It stays fixed in the clue book. Later misses reveal the next clue without adding new distance or direction readings.</li></ol><p>Current heading describes the plane at the observation. It can turn before arrival.</p><p>All clues, including the first direction clue, are in the clue book. On phone, you can hide or show the book; a new clue reopens it.</p><p>After your first miss, the clues give destination country, distance remaining, airline when available, then a city initial. Missing facts are skipped.</p><p>Seoul and Incheon both count for Incheon Airport. Tokyo counts for Haneda and Narita. Other linked cities served by the reported airport also count.</p><p>Revealing an extra clue uses one guess and fills a line on your guess board. Routes come from a database and can be wrong; the reported airport is shown at the end.</p><p>If live data is unavailable, you can play a recorded flight. These rounds are labelled “Practice”.</p>';
+    content.innerHTML = '<ol><li>Use your location or choose a starting city. We look for a flight nearby; the starting place is not its departure point.</li><li>Search for the destination city, select a result and press Guess. You have six tries.</li><li>Your first missed city reveals its distance and direction to the main answer. That clue stays fixed. Later misses reveal country, distance remaining, airline when available, then a city initial.</li></ol><p>The plane’s direction describes one observation. It can turn before arrival.</p><p>All clues stay in the clue book. On a phone, Hide/Show changes its visibility without using a try. A new clue reopens it. Reveal next clue uses one try.</p><p>Some airports accept several cities: Seoul and Incheon both count for Incheon Airport; Tokyo counts for Haneda and Narita. Empty or repeated guesses do not use a try.</p><p>The answer comes from a route database and can be wrong. The exact airport is shown at the end. Recorded rounds are labelled Practice.</p>';
   } else {
     title.textContent = 'About the data';
     const round = state.view === 'game' ? state.game.round : null;
-    content.innerHTML = `<p>Live aircraft positions come from <a href="https://adsb.fi/" target="_blank" rel="noopener noreferrer">adsb.fi</a> for personal, non-commercial play. Recorded practice comes from <a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noopener noreferrer">adsb.lol</a> under ODbL 1.0. Live reported routes and airline names come from <a href="https://www.adsbdb.com/" target="_blank" rel="noopener noreferrer">adsbdb</a>. Routes match a flight identifier, called a callsign, to airports. These database matches can be stale or wrong; they aren’t confirmed flight plans.</p>
-      <p>We skip positions over a minute old, unclear routes and routes with stops. Each round keeps its original observation, so the position and answer stay fixed while you play.</p>
-      <h3>What the clues mean</h3><p>Current heading shows where the aircraft’s nose points at the observation. When it isn’t reported, current direction of travel shows its movement over the ground. The plane can turn before arrival; the starting place is the observation area, not its departure point. An airline clue uses the operating airline reported for the flight, when its name is available. Distance remaining is a straight-line estimate to the main destination city; the actual flight path may be longer. The combined distance-and-direction clue starts at your first guessed city and stays fixed. The other clues give the destination country and the first letter of an accepted city.</p>
-      <h3>Distances and map</h3><p>Guess feedback points from your chosen city toward the main destination city. The distance clue runs from the aircraft to that city. Both use straight-line distances to city reference points; where city coordinates are unavailable, we use an airport position. We don’t estimate arrival times.</p>
-      <p>Linked cities can also count as correct. The reported route and globe use the exact airports. The dotted line appears after the round and illustrates the reported route; it isn’t a recorded flight path.</p>
+    content.innerHTML = `<p>Hosted live positions come from <a href="https://adsb.fi/" target="_blank" rel="noopener noreferrer">adsb.fi</a> for personal, non-commercial play. Local live searches and recorded practice use <a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noopener noreferrer">adsb.lol</a>; its data is licensed under <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener noreferrer">ODbL 1.0</a>. Reported routes and airline names also use <a href="https://www.adsbdb.com/" target="_blank" rel="noopener noreferrer">adsbdb</a>.</p>
+      <p>Routes link an aircraft’s radio identifier, called a callsign, to airports. These links can be outdated or wrong. We reject old positions, routes with stops and obvious movement conflicts. Each round keeps its original observation and answer.</p>
+      <h3>Direction, distances and map</h3><p>Heading is where the plane’s nose points. If it is unavailable, we show its direction of movement over the ground. The plane can turn before arrival.</p>
+      <p>The first missed city supplies one fixed distance-and-direction clue. Distance remaining runs from the plane to the main destination city. Both are straight-line estimates to approximate reference points, sometimes an airport position. We do not predict arrival times.</p>
+      <p>Linked cities can also be correct. The result shows the exact airport. The dotted globe line connects the reported airports; it is not a recorded flight path.</p>
       ${round ? `<h3>This round</h3><p>${escape(round.mode === 'practice' ? 'Recorded practice observation' : 'Aircraft observed')} ${escape(new Date(round.aircraft.positionObservedAt).toLocaleString('en-GB', { timeZone: 'UTC' }))} UTC. Aircraft source: ${escape(round.provider)}. Route source: ${escape(round.route.provider)}.</p>` : ''}
-      <h3>Your location</h3><p>Permission is requested only when you press “Use my location”. Approximate coordinates are sent to the aircraft provider. This game doesn’t save your location or use analytics. Providers may keep their own request logs.</p>
-      <p>Airport names and coordinates come from <a href="https://ourairports.com/data/" target="_blank" rel="noopener noreferrer">OurAirports</a>, public-domain data via datasets/airport-codes. A small curated list links airports to the cities they serve. Other places use the town or city listed for the airport.</p>`;
+      <h3>Your location</h3><p>We request permission only after “Use my location”. Search coordinates are rounded to two decimal places before they reach the aircraft provider. The game keeps location in memory and uses no analytics. Providers may keep request logs.</p>
+      <p>Airport names and coordinates use <a href="https://ourairports.com/data/" target="_blank" rel="noopener noreferrer">OurAirports</a> public-domain data. A small sourced list links airports to served cities; other answers use the listed town or city.</p>`;
   }
   dialog.showModal();
 }
@@ -648,50 +609,9 @@ function visibleGameState() {
   };
 }
 
-function toolString(input, key) {
-  if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(name => name !== key)
-    || typeof input[key] !== 'string' || !input[key].trim() || input[key].length > 100) throw new Error(`Provide a valid ${key}.`);
-  return input[key].trim();
+if (document.modelContext?.registerTool) {
+  import('./browser-tools.js').then(({ registerGameTools }) => registerGameTools({
+    getState: () => state, visibleGameState, practice, startSearch, cities, nextClue,
+    guessCity: city => { state.results = [city]; chooseResult(0); makeGuess(); },
+  })).catch(() => { /* Optional integration must not prevent ordinary play. */ });
 }
-
-function registerGameTools() {
-  const context = document.modelContext;
-  if (!context?.registerTool) return;
-  const lifecycle = new AbortController();
-  const empty = { type: 'object', properties: {}, additionalProperties: false };
-  const stringSchema = key => ({ type: 'object', properties: { [key]: { type: 'string', minLength: 1, maxLength: 100 } }, required: [key], additionalProperties: false });
-  const tools = [
-    { name: 'read_game_state', description: 'Read the visible round, revealed clues and guess history. Does not reveal a hidden answer or device coordinates.', inputSchema: empty, readOnly: true, execute: visibleGameState },
-    { name: 'start_practice_round', description: 'Start a clearly labelled recorded real-flight practice round. Replaces any current round; never uses device location.', inputSchema: empty, execute: async () => { await practice(); return visibleGameState(); } },
-    { name: 'start_city_round', description: 'Choose a starting city and search for a live flight nearby. This sets the observation place, not a destination guess. Sends city coordinates to the aircraft provider and replaces the current round.', inputSchema: stringSchema('city'), execute: async input => {
-      const name = toolString(input, 'city');
-      const city = cities.find(value => value.name.toLowerCase() === name.toLowerCase());
-      if (!city) throw new Error(`Choose one of: ${cities.map(value => value.name).join(', ')}.`);
-      await startSearch({ ...city, kind: 'city' }); return visibleGameState();
-    } },
-    { name: 'search_cities', description: 'Search the same local destination-city picker by city, country, airport name or code. Returns city IDs and an honest total. Requires an open round.', inputSchema: stringSchema('query'), readOnly: true, execute: input => {
-      const query = toolString(input, 'query');
-      if (state.view !== 'game') throw new Error('Open a round first.');
-      const matches = searchCities(state.cityIndex, query);
-      return { cities: matches.map(({id,name,country,region,fallback,airportCode,airportName}) => ({id,name,country,...(region ? {region} : {}),...(fallback ? {airportCode,airportName} : {})})), total: matches.total };
-    } },
-    { name: 'submit_city_guess', description: 'Select and submit a city ID from search_cities. Linked cities served by the reported airport also count. A valid new city consumes one of six attempts; invalid or duplicate guesses do not.', inputSchema: stringSchema('cityId'), execute: input => {
-      const id = toolString(input, 'cityId');
-      if (state.view !== 'game' || state.game.status !== 'playing') throw new Error('Open a playing round first.');
-      const city = state.cityIndex.find(value => value.id === id);
-      if (!city) throw new Error('Choose a valid city from the search results.');
-      if (state.game.guesses.some(guess => guess.city?.id === id)) throw new Error('This city has already been guessed.');
-      state.results = [city]; chooseResult(0); makeGuess(); return visibleGameState();
-    } },
-    { name: 'reveal_next_clue', description: 'Reveal the next clue using one of six guesses and mark that guess-board line as used. Ends the round if no guesses remain.', inputSchema: empty, execute: () => {
-      if (state.view !== 'game' || !nextClue()) throw new Error('No further clue is available in this round.');
-      return visibleGameState();
-    } },
-  ];
-  for (const { readOnly = false, ...tool } of tools) {
-    try { Promise.resolve(context.registerTool({ ...tool, annotations: { readOnlyHint: readOnly, untrustedContentHint: true } }, { signal: lifecycle.signal })).catch(() => {}); }
-    catch { /* Optional capability: unsupported browsers keep the regular game. */ }
-  }
-  addEventListener('pagehide', () => lifecycle.abort(), { once: true });
-}
-registerGameTools();

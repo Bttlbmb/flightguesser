@@ -24,7 +24,7 @@ Uncurated municipalities retain airport-bound identities and airport context in 
 
 ## Membership evidence
 
-The original twelve associations were reviewed on 3 October 2026; Kraków and Athens were added on 4 October 2026 after the playtest. The listed sources support a served-city or municipality association; they do not certify any flight's destination. Airport IDs are matched to the bundled index.
+The original associations were reviewed on 3 October 2026; Kraków and Athens were added on 4 October 2026. The listed sources support a served-city or municipality association; they do not certify any flight's destination. Airport IDs are matched to the bundled index.
 
 | City | Direct airports; primary assignment | Source and meaning |
 | --- | --- | --- |
@@ -51,22 +51,7 @@ Served city, physical municipality and a formal IATA city code mean different th
 
 Feedback needs one point for each city. Five points are approximations retained from the original starting-city selector. The remaining eleven deliberately use a bundled airport position. These are reference points, not official city centers or boundary centroids.
 
-| City | Latitude, longitude | Source |
-| --- | --- | --- |
-| Seoul | 37.5665, 126.978 | Original starting-city selector |
-| Tokyo | 35.6762, 139.6503 | Original starting-city selector |
-| London | 51.5074, −0.1278 | Original starting-city selector |
-| New York | 40.7128, −74.006 | Original starting-city selector |
-| Paris | 48.8566, 2.3522 | Original starting-city selector |
-| Incheon | 37.469101, 126.450996 | RKSI airport fallback |
-| Narita | 35.76858, 140.388714 | RJAA airport fallback |
-| Newark | 40.6894, −74.170545 | KEWR airport fallback |
-| Niigata | 37.954166, 139.112189 | RJSN airport fallback |
-| Jeju City | 33.512058, 126.492548 | RKPC airport fallback |
-| Portland, Oregon | 45.588699, −122.598 | KPDX airport fallback |
-| Portland, Maine | 43.646198, −70.309303 | KPWM airport fallback |
-| Kraków, Balice | 50.077702, 19.7848 | EPKK airport fallback, for each city |
-| Athens, Spata-Artemida | 37.936401, 23.9445 | LGAV airport fallback, for each city |
+Exact values and source identifiers live beside each entry in `public/data/city-links.js`. The five starting-city points are Seoul, Tokyo, London, New York and Paris; the others use the named airport’s position.
 
 The membership pages above do not supply these numeric coordinates. Airport fallbacks come from `public/data/airports.json`; retain its [attribution](data-attribution.md). A route provider may report a slightly different airport position. The city reference point does not overwrite that original route fact.
 

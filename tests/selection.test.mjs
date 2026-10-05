@@ -86,7 +86,7 @@ test('history holds the last ten answer summaries and no location or telemetry',
   for (let index = 0; index < 12; index++) history = rememberSelection(history, roundTo('BBBB', 10));
   assert.equal(history.length, 10);
   assert.deepEqual(Object.keys(selectionHistoryEntry(roundTo())).sort(),
-    ['airline', 'country', 'destinationIds', 'lengthBand', 'routeKey'].sort());
+    ['airline', 'country', 'destinationIds', 'lengthBand'].sort());
 });
 
 test('many descending carrier groups cannot bury a single carrier of outbound cruise flights', () => {
