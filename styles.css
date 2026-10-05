@@ -93,7 +93,7 @@ input::placeholder { color: var(--muted); opacity: 1; }
 .finished .round-layout { grid-template-rows: auto; grid-template-areas: 'board book'; }
 .clue-book { grid-area: book; min-width: 0; }
 .clue-book-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-.clue-book h2 { margin: 0; font-size: 15px; font-weight: 500; }
+.clue-book h2, .guess-form-title label { margin: 0; font-size: 15px; font-weight: 500; line-height: 1.4; }
 .clue-book-actions { display: flex; align-items: center; gap: 12px; }
 .clue-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .clue-toggle { display: none; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 0 8px 6px; border: 0; background: transparent; color: var(--primary); font-size: 12px; }
@@ -109,8 +109,7 @@ input::placeholder { color: var(--muted); opacity: 1; }
 /* City picker and guess history. The results can flip above the input when the
    on-screen keyboard leaves little space below it. */
 .guess-form { grid-area: form; min-width: 0; position: relative; margin: 0; }
-.guess-form-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.guess-form-title label { font-size: 13px; font-weight: 500; }
+.guess-form-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .guesses-left { font-size: 12px; font-weight: 400; color: var(--muted); white-space: nowrap; }
 .input-row { display: flex; gap: 8px; margin-top: 8px; }
 .input-wrap { flex: 1; min-width: 0; position: relative; }
