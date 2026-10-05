@@ -105,7 +105,6 @@ input::placeholder { color: var(--muted); opacity: 1; }
 .book-clue dd { margin: 5px 0 0; }
 .book-clue .clue-value { font-size: 15px; font-weight: 500; letter-spacing: 0; line-height: 1.4; }
 .book-clue .clue-detail { font-size: 12px; margin-top: 5px; }
-.reveal-clue { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--primary); font-size: 13px; text-decoration: none; }
 #clue-book-content[hidden] { display: none; }
 /* City picker and guess history. The results can flip above the input when the
    on-screen keyboard leaves little space below it. */
@@ -133,7 +132,6 @@ input::placeholder { color: var(--muted); opacity: 1; }
 .board { grid-area: board; min-width: 0; margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
 .guess-row { scroll-margin: 16px; display: grid; grid-template-columns: 20px minmax(0,1fr) auto; align-items: center; gap: 8px; min-height: 39px; padding: 7px 10px; border: 1px solid var(--soft); border-radius: 2px; background: var(--soft); font-size: 14px; }
 .guess-row.empty { color: var(--muted); border-color: #b9c3cb; background: transparent; }
-.guess-row.clue-used .guess-name { color: var(--muted); }
 .book-clue:focus-visible, .guess-row:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 .guess-number { font-size: 12px; color: var(--muted); }
 .guess-name { min-width: 0; font-weight: 500; overflow-wrap: anywhere; }

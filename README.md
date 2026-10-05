@@ -26,7 +26,7 @@ The relay runs only on your computer. A live round still needs a fresh observati
 
 Search by city, airport name or airport code, choose a result, then press **Guess**. Empty, invalid and repeated choices do not use a try.
 
-Your first missed city reveals its distance and direction to the main destination city. That clue stays fixed. Later misses reveal the destination country, distance remaining, airline when available, then a city initial. Missing facts are skipped. **Reveal next clue** also uses one try. All clues stay in the clue book; Hide/Show on a phone changes its visibility for free.
+Your first missed city reveals its distance and direction to the main destination city. That clue stays fixed. Later misses reveal the destination country, distance remaining, airline when available, then a city initial. Missing facts are skipped. All clues stay in the clue book; Hide/Show on a phone changes its visibility for free.
 
 Several cities can count for one airport. Tokyo accepts Haneda and Narita; Seoul and Incheon both accept Incheon Airport. These are direct links: Incheon does not also accept Gimpo. The [city policy](docs/city-destinations.md) explains the accepted names and approximate reference points.
 

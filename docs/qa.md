@@ -33,7 +33,7 @@ It serves the actual game on an unused localhost port and blocks external reques
 | --- | --- |
 | Start and recovery | Entry, city selection, loading, cancellation, failed data and retry; late responses cannot reopen cancelled rounds |
 | Search | City, airport, code, accents and homonyms; explicit selection, keyboard arrows/Enter/Escape, truthful total counts |
-| Rules | First miss creates one fixed clue; later misses add no new city geometry; reveals use a try; invalid and duplicate guesses do not |
+| Rules | First miss creates one fixed clue; later misses unlock the next available fact without new city geometry; invalid and duplicate guesses do not |
 | Results | First-try win, sixth-try win and loss; retained history, accepted city names, exact airport and source |
 | Practice | No adjacent destination repeats; all four recordings remain reachable; cancelled loads do not advance rotation |
 | Layout | Phone portrait, short screens, landscape, both sides of 700 px, tablet and desktop; long labels and doubled text |

@@ -17,7 +17,7 @@ export function createGame(round) {
   // Flight facts stay fixed. The first missed city adds one
   // reference-city clue; later guesses cannot generate fresh geometry.
   const clues = cluesForRound(round, destination);
-  const game = { round, destination, clues, guesses: [], clueIndex: 0, assistance: 0, status: 'playing' };
+  const game = { round, destination, clues, guesses: [], clueIndex: 0, status: 'playing' };
   return game;
 }
 
@@ -55,7 +55,6 @@ export function submitGuess(game, city) {
   game.guesses.push(guess);
   if (!correct && firstCityGuess) {
     const direction = ({ N: 'north', NE: 'northeast', E: 'east', SE: 'southeast', S: 'south', SW: 'southwest', W: 'west', NW: 'northwest' })[compassPoint(guess.bearing)] ?? 'Nearby';
-    // Insert after already revealed facts so paid-clue history keeps its indexes.
     // This clue remains tied to the first city; later guesses never update it.
     game.clues.splice(game.clueIndex + 1, 0, { kind: 'text', title: 'Distance & direction', value: `${formatClueDistance(guess.distanceKm)} · ${direction}`, detail: `From ${cityLabel(city)} to the main destination city.` });
     game.clueIndex++;
@@ -68,15 +67,4 @@ export function submitGuess(game, city) {
     guess.clueIndex = game.clueIndex;
   }
   return { accepted: true, guess, status: game.status };
-}
-
-export function revealClue(game) {
-  if (game.status !== 'playing') return false;
-  const finalClue = game.clues.length - 1;
-  if (game.clueIndex >= finalClue) return false;
-  game.clueIndex++;
-  game.assistance++;
-  game.guesses.push({ kind: 'clue', clueIndex: game.clueIndex, correct: false });
-  if (game.guesses.length >= MAX_GUESSES) game.status = 'lost';
-  return true;
 }

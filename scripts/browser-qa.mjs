@@ -163,42 +163,45 @@ try {
       let game = await read(page);
       assert.equal(game.guessesLeft, 6);
       assert.equal('destinationCity' in game, false);
+      assert.equal(await page.locator('[data-action="clue"]').count(), 0);
+      assert.equal(await page.evaluate(() => 'reveal_next_clue' in window.qaTools), false);
+      assert.equal(await page.locator('.footer').innerText(), 'About the data');
       assert.equal(await page.locator('.globe-route').count(), 0);
       const input = page.locator('#destination-input');
       await input.fill('London');
       await inspect(page, `${label}-search`);
       await input.press('ArrowDown'); await input.press('Enter');
       assert.equal(await input.inputValue(), 'London');
-      await page.locator('[data-action="clue"]').click();
-      assert.equal(await input.inputValue(), 'London');
       const collapsible = await page.locator('#clue-book-toggle').isVisible();
       if (collapsible) {
         await page.locator('#clue-book-toggle').click();
-        assert.equal((await read(page)).guessesLeft, 5);
+        assert.equal((await read(page)).guessesLeft, 6);
         assert.equal(await page.locator('#clue-book-content').isVisible(), false);
       }
       await page.locator('#guess-button').click();
       game = await read(page);
       const firstClue = game.clues.find(clue => clue.startsWith('Distance & direction:'));
       assert.ok(firstClue);
-      assert.equal(game.guessesLeft, 4);
+      assert.equal(game.guessesLeft, 5);
       if (collapsible) assert.equal(await page.locator('#clue-book-content').isVisible(), true);
       // A duplicate leaves attempts and the chosen phone-collapse state intact.
       if (collapsible) await page.locator('#clue-book-toggle').click();
       await input.fill('London'); await input.press('ArrowDown'); await input.press('Enter');
       await page.locator('#guess-button').click();
-      assert.equal((await read(page)).guessesLeft, 4);
+      assert.equal((await read(page)).guessesLeft, 5);
       if (collapsible) assert.equal(await page.locator('#clue-book-content').isVisible(), false);
-      await tool(page, 'reveal_next_clue');
       await guess(page, 'HND'); await guess(page, 'ICN');
+      await guess(page, 'CJU'); await guess(page, 'JFK');
       assert.equal((await read(page)).clues.find(clue => clue.startsWith('Distance & direction:')), firstClue);
       game = await guess(page, 'KIJ');
       assert.equal(game.status, 'won');
       assert.equal(game.guessesLeft, 0);
-      assert.equal(await page.locator('.guess-row.clue-used').count(), 2);
+      assert.equal(game.guesses.length, 6);
+      assert.ok(game.guesses.every(guess => guess.city));
       assert.equal(await page.locator('.globe-route').count(), 1);
       await inspect(page, `${label}-sixth-win`, width === 320 || width === 1440);
       await page.locator('#help-button').click(); await inspect(page, `${label}-help`);
+      assert.doesNotMatch(await page.locator('#info-content').innerText(), /Reveal next clue/);
       if ([320, 701, 1440].includes(width)) await doubledText(page, `${label}-text200-help`);
       await page.locator('#info-done').click();
       await page.locator('#data-button').click(); await inspect(page, `${label}-data`);
@@ -212,7 +215,7 @@ try {
         assert.match(await page.locator('.route-note').innerText(), new RegExp(callsign));
       }
       assert.deepEqual(mock.external, []);
-      mark(`${label}: keyboard, fixed clue, duplicates, paid clues, sixth win, dialogs, all recordings`);
+      mark(`${label}: keyboard, fixed clue, duplicates, automatic clues, sixth win, dialogs, all recordings`);
       await page.reload(); await page.waitForFunction(() => window.qaTools?.start_practice_round);
       await tool(page, 'start_practice_round');
       for (const query of ['LHR', 'HND', 'ICN', 'CJU', 'JFK', 'CDG']) await guess(page, query);
@@ -282,7 +285,7 @@ try {
   long.route.airline.name = 'Airline' + 'LongName'.repeat(17);
   const labels = await boot({ width: 320, height: 568 }, { fixture: long });
   await tool(labels.page, 'start_practice_round');
-  for (let index = 0; index < 4; index++) await tool(labels.page, 'reveal_next_clue');
+  for (const query of ['LHR', 'HND', 'ICN', 'CJU', 'JFK']) await guess(labels.page, query);
   await inspect(labels.page, '320x568-long-clues');
   await doubledText(labels.page, '320x568-text200-clues');
   await guess(labels.page, 'KIJ'); await inspect(labels.page, '320x568-long-result', true);

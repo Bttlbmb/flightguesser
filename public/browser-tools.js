@@ -7,7 +7,7 @@ function toolString(input, key) {
   return input[key].trim();
 }
 
-export function registerGameTools({ getState, visibleGameState, practice, startSearch, cities, guessCity, nextClue, context = document.modelContext }) {
+export function registerGameTools({ getState, visibleGameState, practice, startSearch, cities, guessCity, context = document.modelContext }) {
   if (!context?.registerTool) return;
   const lifecycle = new AbortController();
   const state = () => getState();
@@ -35,10 +35,6 @@ export function registerGameTools({ getState, visibleGameState, practice, startS
       if (!city) throw new Error('Choose a valid city from the search results.');
       if (state().game.guesses.some(guess => guess.city?.id === id)) throw new Error('This city has already been guessed.');
       guessCity(city); return visibleGameState();
-    } },
-    { name: 'reveal_next_clue', description: 'Reveal the next clue using one of six guesses and mark that guess-board line as used. Ends the round if no guesses remain.', inputSchema: empty, execute: () => {
-      if (state().view !== 'game' || !nextClue()) throw new Error('No further clue is available in this round.');
-      return visibleGameState();
     } },
   ];
   for (const { readOnly = false, ...tool } of tools) {

@@ -2,7 +2,7 @@ import { decodeAirportData } from '../public/airports.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createGame, submitGuess, revealClue, cluesForRound, MAX_GUESSES, formatClueDistance } from '../public/game.js';
+import { createGame, submitGuess, cluesForRound, MAX_GUESSES, formatClueDistance } from '../public/game.js';
 import { destinationCities } from '../public/destinations.js';
 import { distanceKm, bearingDegrees } from '../public/geo.js';
 
@@ -46,28 +46,12 @@ test('the first missed city reveals one combined distance/direction clue that ne
   assert.equal(clue.value, '9,308 km · northeast');
   assert.equal(clue.detail, 'From London to the main destination city.');
   assert.equal(game.guesses.length, 1);
-  assert.equal(game.assistance, 0);
   const beforeDuplicate = structuredClone(game);
   assert.equal(submitGuess(game, city('LHR')).reason, 'duplicate');
   assert.deepEqual(game, beforeDuplicate);
   for (const code of ['HND', 'ICN', 'CJU', 'JFK', 'CDG']) submitGuess(game, city(code));
   assert.deepEqual(game.clues.filter(value => value.title === 'Distance & direction'), [clue]);
   assert.equal(game.guesses.filter(guess => game.clues[guess.clueIndex]?.title === clue.title).length, 1);
-  assert.equal(game.status, 'lost');
-});
-
-test('paid reveals before the first city keep their history and still allow one first-guess clue', () => {
-  const game = createGame(airlineRound);
-  while (revealClue(game)) {}
-  const paidHistory = game.guesses.map(guess => structuredClone(game.clues[guess.clueIndex]));
-  assert.equal(game.guesses.length, 4);
-  const miss = submitGuess(game, city('LHR')).guess;
-  assert.equal(game.clues[miss.clueIndex].title, 'Distance & direction');
-  assert.deepEqual(game.guesses.slice(0, 4).map(guess => game.clues[guess.clueIndex]), paidHistory);
-  assert.equal(game.guesses.length, 5);
-  const last = submitGuess(game, city('HND')).guess;
-  assert.equal(Object.hasOwn(last, 'clueIndex'), false);
-  assert.equal(game.clues.filter(clue => clue.title === 'Distance & direction').length, 1);
   assert.equal(game.status, 'lost');
 });
 
@@ -92,56 +76,6 @@ test('missing, malformed and repeated city selections preserve guesses and clues
   assert.equal(game.clueIndex, 1);
 });
 
-test('extra clues consume an attempt and stop at the actual final clue', () => {
-  const game = createGame(round);
-  const count = cluesForRound(round).length;
-  for (let i = 1; i < count; i++) {
-    assert.equal(revealClue(game), true);
-    assert.equal(game.guesses.length, i);
-    assert.deepEqual(game.guesses.at(-1), { kind: 'clue', clueIndex: i, correct: false });
-  }
-  const before = structuredClone(game);
-  assert.equal(revealClue(game), false);
-  assert.deepEqual(game, before);
-  assert.equal(game.assistance, count - 1);
-  assert.equal(game.guesses.length, count - 1);
-  assert.equal(game.clueIndex, count - 1);
-});
-
-test('paid clues and city guesses share the six attempts and preserve duplicate protection', () => {
-  const game = createGame(round);
-  assert.equal(revealClue(game), true);
-  assert.equal(submitGuess(game, city('LHR')).accepted, true);
-  assert.equal(submitGuess(game, city('LHR')).reason, 'duplicate');
-  assert.equal(game.guesses.length, 2);
-  assert.equal(game.clueIndex, 2);
-  assert.equal(game.assistance, 1);
-  for (const code of ['HND', 'ICN', 'CJU']) assert.equal(submitGuess(game, city(code)).accepted, true);
-  assert.equal(game.status, 'playing');
-  assert.equal(submitGuess(game, game.destination.primary).status, 'won');
-  assert.equal(game.guesses.length, 6);
-  const before = structuredClone(game);
-  assert.equal(revealClue(game), false);
-  assert.deepEqual(game, before);
-});
-
-test('mixed paid clues and missed city guesses retain each newly revealed clue in order', () => {
-  const game = createGame(round);
-  const originalClues = structuredClone(game.clues);
-  assert.equal(revealClue(game), true);
-  const firstMiss = submitGuess(game, city('LHR')).guess;
-  assert.equal(revealClue(game), true);
-  const secondMiss = submitGuess(game, city('HND')).guess;
-  assert.deepEqual(game.guesses.map(guess => guess.clueIndex), [1, 2, 3, 4]);
-  assert.equal(firstMiss, game.guesses[1]);
-  assert.equal(secondMiss, game.guesses[3]);
-  assert.deepEqual(game.guesses.map(guess => game.clues[guess.clueIndex].title), ['Destination country', 'Distance & direction', 'Distance remaining', 'City initial']);
-  assert.deepEqual(game.clues.filter(clue => clue.title !== 'Distance & direction'), originalClues);
-  assert.equal(game.assistance, 2);
-  assert.equal(game.guesses.length, 4);
-  assert.equal(game.status, 'playing');
-});
-
 test('history follows the actual clue list when optional facts are missing and does not repeat exhausted clues', () => {
   const partial = structuredClone(round);
   partial.route.destination.country = '';
@@ -149,9 +83,9 @@ test('history follows the actual clue list when optional facts are missing and d
   assert.deepEqual(game.clues.map(clue => clue.title), ['Current heading', 'Distance remaining', 'City initial']);
   const distanceMiss = submitGuess(game, city('LHR')).guess;
   assert.equal(game.clues[distanceMiss.clueIndex].title, 'Distance & direction');
-  assert.equal(revealClue(game), true);
-  assert.equal(game.clues[game.guesses.at(-1).clueIndex].title, 'Distance remaining');
-  const initialMiss = submitGuess(game, city('HND')).guess;
+  const remainingMiss = submitGuess(game, city('HND')).guess;
+  assert.equal(game.clues[remainingMiss.clueIndex].title, 'Distance remaining');
+  const initialMiss = submitGuess(game, city('CJU')).guess;
   assert.equal(game.clues[initialMiss.clueIndex].title, 'City initial');
   const exhaustedMiss = submitGuess(game, city('ICN')).guess;
   assert.equal(Object.hasOwn(exhaustedMiss, 'clueIndex'), false);
@@ -181,22 +115,6 @@ test('a terminal miss leaves remaining unrevealed clues unattached to its histor
   assert.equal(game.status, 'lost');
 });
 
-test('revealing a clue on the sixth attempt loses the round and freezes further actions', () => {
-  const game = createGame(round);
-  while (game.clues.length <= MAX_GUESSES) game.clues.push({ kind: 'text', title: 'Additional clue', value: 'An extra clue' });
-  for (const code of ['LHR', 'HND', 'ICN', 'CJU', 'JFK']) assert.equal(submitGuess(game, city(code)).accepted, true);
-  assert.equal(game.status, 'playing');
-  assert.equal(revealClue(game), true);
-  assert.equal(game.guesses.length, 6);
-  assert.equal(game.guesses.at(-1).kind, 'clue');
-  assert.equal(game.clueIndex, 6);
-  assert.equal(game.status, 'lost');
-  const before = structuredClone(game);
-  assert.equal(revealClue(game), false);
-  assert.equal(submitGuess(game, game.destination.primary).reason, 'finished');
-  assert.deepEqual(game, before);
-});
-
 test('Tokyo is correct for either Haneda or Narita without changing the reported airport', () => {
   for (const code of ['HND', 'NRT']) {
     const source = roundTo(code);
@@ -206,7 +124,6 @@ test('Tokyo is correct for either Haneda or Narita without changing the reported
     assert.deepEqual(source, before);
     assert.equal(game.round.route.destination.code, code);
     assert.equal(submitGuess(game, city('LHR')).reason, 'finished');
-    assert.equal(revealClue(game), false);
   }
 });
 

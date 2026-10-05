@@ -4,7 +4,7 @@ import { indexCities, searchCities, cityLabel, destinationRepeatIds } from './de
 import { distanceKm } from './geo.js';
 import { loadAirportData, loadPracticeData, createPracticeRotation } from './data.js';
 import { rememberSelection, LOCAL_DESTINATION_RADIUS_KM } from './selection.js';
-import { createGame, submitGuess, revealClue, MAX_GUESSES } from './game.js';
+import { createGame, submitGuess, MAX_GUESSES } from './game.js';
 
 const app = document.querySelector('#app');
 const announcer = document.querySelector('#announcer');
@@ -311,8 +311,7 @@ function clueBookHTML(game) {
   const expanded = !phoneLayout.matches || state.clueBookOpen;
   return `<section class="clue-book" aria-labelledby="clue-book-title">
     <div class="clue-book-header"><h2 id="clue-book-title">Clue book</h2><div class="clue-book-actions"><span class="clue-count">${visible.length} ${visible.length === 1 ? 'clue' : 'clues'}</span><button class="clue-toggle" id="clue-book-toggle" type="button" data-action="toggle-clues" aria-controls="clue-book-content" aria-expanded="${expanded}"><span>${expanded ? 'Hide clues' : 'Show clues'}</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6L8 10L12 6"/></svg></button></div></div>
-    <div id="clue-book-content" ${expanded ? '' : 'hidden'}><dl class="clue-list">${visible.map((clue, index) => bookClueHTML(clue, index, game)).join('')}</dl>
-    ${!finished && game.clueIndex < game.clues.length - 1 ? '<button class="text-button reveal-clue" data-action="clue">Reveal next clue <span aria-hidden="true">→</span></button>' : ''}</div>
+    <div id="clue-book-content" ${expanded ? '' : 'hidden'}><dl class="clue-list">${visible.map((clue, index) => bookClueHTML(clue, index, game)).join('')}</dl></div>
   </section>`;
 }
 
@@ -359,7 +358,6 @@ function renderGame() {
 
 function guessHTML(guess, index) {
   if (!guess) return `<li class="guess-row empty" aria-label="Guess ${index + 1}, unused"><span class="guess-number">${index + 1}</span><span aria-hidden="true"></span><span aria-hidden="true"></span></li>`;
-  if (guess.kind === 'clue') return `<li class="guess-row clue-used" id="guess-row-${index + 1}" tabindex="-1" aria-label="Guess ${index + 1}, used to reveal a clue"><span class="guess-number">${index + 1}</span><span class="guess-name">Clue revealed</span><span aria-hidden="true"></span></li>`;
   return `<li class="guess-row ${guess.correct ? 'correct' : ''}" id="guess-row-${index + 1}" tabindex="-1"><span class="guess-number">${index + 1}</span>
     <span class="guess-name">${escape(cityLabel(guess.city))}</span>
     <span class="guess-feedback">${guess.correct ? '✓ Correct' : 'Miss'}</span></li>`;
@@ -503,22 +501,9 @@ app.addEventListener('click', event => {
   if (action === 'elsewhere') lookElsewhere();
   if (action === 'retry' && lastPlace && Date.now() >= (state.retryAt ?? 0)) startSearch(lastPlace);
   if (action === 'clear') clearInput();
-  if (action === 'clue') nextClue();
   if (action === 'toggle-clues' && phoneLayout.matches) { state.clueBookOpen = !state.clueBookOpen; syncClueBook(); }
   if (action === 'next') state.game.round.mode === 'practice' ? practice() : startSearch(state.game.round.place);
 });
-
-function nextClue() {
-  if (!state.game || !revealClue(state.game)) return false;
-  state.clueBookOpen = true;
-  renderGame();
-  const game = state.game;
-  const remaining = MAX_GUESSES - game.guesses.length;
-  if (game.status !== 'playing') focusRoundResult();
-  else focusRevealedClue();
-  announce(`One guess used. Clue ${game.clueIndex + 1} of ${game.clues.length} revealed. ${plainClue(game.clues[game.clueIndex])} ${remaining} ${remaining === 1 ? 'guess' : 'guesses'} left.${game.status === 'lost' ? ` Destination city: ${cityLabel(game.destination.primary)}.` : ''}`);
-  return true;
-}
 
 app.addEventListener('input', event => {
   if (event.target.id !== 'destination-input') return;
@@ -571,7 +556,7 @@ function showInfo(kind) {
   const content = document.querySelector('#info-content');
   if (kind === 'help') {
     title.textContent = 'How to play';
-    content.innerHTML = '<ol><li>Use your location or choose a starting city. We look for a flight nearby; the starting place is not its departure point.</li><li>Search for the destination city, select a result and press Guess. You have six tries.</li><li>Your first missed city reveals its distance and direction to the main answer. That clue stays fixed. Later misses reveal country, distance remaining, airline when available, then a city initial.</li></ol><p>The plane’s direction describes one observation. It can turn before arrival.</p><p>All clues stay in the clue book. On a phone, Hide/Show changes its visibility without using a try. A new clue reopens it. Reveal next clue uses one try.</p><p>Some airports accept several cities: Seoul and Incheon both count for Incheon Airport; Tokyo counts for Haneda and Narita. Empty or repeated guesses do not use a try.</p><p>The answer comes from a route database and can be wrong. The exact airport is shown at the end. Recorded rounds are labelled Practice.</p>';
+    content.innerHTML = '<ol><li>Use your location or choose a starting city. We look for a flight nearby; the starting place is not its departure point.</li><li>Search for the destination city, select a result and press Guess. You have six tries.</li><li>Your first missed city reveals its distance and direction to the main answer. That clue stays fixed. Later misses reveal country, distance remaining, airline when available, then a city initial.</li></ol><p>The plane’s direction describes one observation. It can turn before arrival.</p><p>All clues stay in the clue book. On a phone, Hide/Show changes its visibility without using a try. A new clue reopens it.</p><p>Some airports accept several cities: Seoul and Incheon both count for Incheon Airport; Tokyo counts for Haneda and Narita. Empty or repeated guesses do not use a try.</p><p>The answer comes from a route database and can be wrong. The exact airport is shown at the end. Recorded rounds are labelled Practice.</p>';
   } else {
     title.textContent = 'About the data';
     const round = state.view === 'game' ? state.game.round : null;
@@ -599,11 +584,11 @@ function visibleGameState() {
   const game = state.game;
   return {
     view: 'game', mode: game.round.mode, observation: observationLabel(game.round),
-    status: game.status, guessesLeft: MAX_GUESSES - game.guesses.length, extraClues: game.assistance,
+    status: game.status, guessesLeft: MAX_GUESSES - game.guesses.length,
     clues: (game.status === 'playing' ? game.clues.slice(0, game.clueIndex + 1) : game.clues).map(plainClue),
     guesses: game.guesses.map(guess => {
       const revealed = Number.isInteger(guess.clueIndex) ? { clue: plainClue(game.clues[guess.clueIndex]) } : {};
-      return guess.kind === 'clue' ? { kind: 'clue', ...revealed } : { city: cityLabel(guess.city), country: countryName(guess.city.country), correct: guess.correct, ...revealed };
+      return { city: cityLabel(guess.city), country: countryName(guess.city.country), correct: guess.correct, ...revealed };
     }),
     ...(game.status !== 'playing' ? { destinationCity: cityLabel(game.status === 'won' ? game.guesses.at(-1).city : game.destination.primary), acceptedCities: game.destination.accepted.map(cityLabel), reportedAirport: airportLabel(game.round.route.destination), routeSource: game.round.route.provider } : {}),
   };
@@ -611,7 +596,7 @@ function visibleGameState() {
 
 if (document.modelContext?.registerTool) {
   import('./browser-tools.js').then(({ registerGameTools }) => registerGameTools({
-    getState: () => state, visibleGameState, practice, startSearch, cities, nextClue,
+    getState: () => state, visibleGameState, practice, startSearch, cities,
     guessCity: city => { state.results = [city]; chooseResult(0); makeGuess(); },
   })).catch(() => { /* Optional integration must not prevent ordinary play. */ });
 }
